@@ -1,6 +1,6 @@
 <x-layouts.auth>
     <div class="flex flex-col gap-6">
-        <x-auth-header :title="__('Welkom Terug')" :description="__('Log in om verder te gaan met je trading journey')" />
+        <x-auth-header :title="__('Welcome Back')" :description="__('Sign in to continue your trading journey')" />
 
         <!-- Session Status -->
         <x-auth-session-status class="text-center" :status="session('status')" />

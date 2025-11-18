@@ -3,6 +3,8 @@
 use Illuminate\Support\Facades\Route;
 use Laravel\Fortify\Features;
 use Livewire\Volt\Volt;
+use App\Http\Controllers\MarketController;
+use App\Http\Controllers\MarketDataController;
 
 Route::get('/', function () {
     return view('home');
@@ -29,4 +31,13 @@ Route::middleware(['auth'])->group(function () {
             ),
         )
         ->name('two-factor.show');
+});
+
+// Markets / Trading page with real-time charts (Finnhub API + WebSocket)
+// Accessible from sidebar: Dashboard > Trading
+// Default symbol: AAPL (can switch between multiple stocks)
+Route::middleware(['auth'])->group(function () {
+    Route::get('/markets/{symbol}', [MarketController::class, 'show'])->name('markets.show');
+    // Secure latest bar proxy (uses server-side Alpaca keys)
+    Route::get('/markets/{symbol}/bars/latest', [MarketDataController::class, 'latestBar'])->name('markets.bars.latest');
 });

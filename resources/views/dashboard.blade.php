@@ -2,17 +2,17 @@
     <div class="flex h-full w-full flex-1 flex-col gap-6 p-6">
         <!-- Welcome Header -->
         <div class="bg-gradient-to-r from-purple-600 via-pink-500 to-orange-500 rounded-2xl p-8 text-white shadow-xl">
-            <h1 class="text-3xl font-bold mb-2">Welkom terug, {{ auth()->user()->name }}! 👋</h1>
-            <p class="text-purple-100">Hier is een overzicht van je trading prestaties</p>
+            <h1 class="text-3xl font-bold mb-2">Welcome back, {{ auth()->user()->name }}! 👋</h1>
+            <p class="text-purple-100">Here’s an overview of your trading performance</p>
         </div>
 
         <!-- Stats Grid -->
         <div class="grid gap-6 md:grid-cols-3">
-            <!-- Portfolio Waarde -->
+            <!-- Portfolio Value -->
             <div class="group relative overflow-hidden bg-white rounded-2xl p-6 shadow-lg hover:shadow-2xl transition-all duration-300 border border-purple-100 hover:-translate-y-1">
                 <div class="flex items-start justify-between">
                     <div>
-                        <p class="text-sm font-medium text-gray-600 mb-1">Wallet Saldo</p>
+                        <p class="text-sm font-medium text-gray-600 mb-1">Wallet Balance</p>
                         <h3 class="text-3xl font-bold text-gray-900">{{ auth()->user()->wallet?->formatted_balance ?? '€ 0,00' }}</h3>
                         <p class="text-sm text-gray-500 mt-2">{{ auth()->user()->wallet?->currency ?? 'EUR' }}</p>
                     </div>
@@ -24,13 +24,13 @@
                 </div>
             </div>
 
-            <!-- Totaal Trades -->
+            <!-- Total Trades -->
             <div class="group relative overflow-hidden bg-white rounded-2xl p-6 shadow-lg hover:shadow-2xl transition-all duration-300 border border-orange-100 hover:-translate-y-1">
                 <div class="flex items-start justify-between">
                     <div>
-                        <p class="text-sm font-medium text-gray-600 mb-1">Totaal Trades</p>
+                        <p class="text-sm font-medium text-gray-600 mb-1">Total Trades</p>
                         <h3 class="text-3xl font-bold text-gray-900">247</h3>
-                        <p class="text-sm text-gray-500 mt-2">152 winstgevend</p>
+                        <p class="text-sm text-gray-500 mt-2">152 profitable</p>
                     </div>
                     <div class="w-12 h-12 bg-gradient-to-br from-orange-500 to-yellow-500 rounded-xl flex items-center justify-center group-hover:scale-110 transition-transform">
                         <svg class="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -46,7 +46,7 @@
                     <div>
                         <p class="text-sm font-medium text-gray-600 mb-1">Win Rate</p>
                         <h3 class="text-3xl font-bold text-gray-900">61.5%</h3>
-                        <p class="text-sm text-purple-600 font-semibold mt-2">Uitstekend! 🎯</p>
+                        <p class="text-sm text-purple-600 font-semibold mt-2">Excellent! 🎯</p>
                     </div>
                     <div class="w-12 h-12 bg-gradient-to-br from-pink-500 to-purple-500 rounded-xl flex items-center justify-center group-hover:scale-110 transition-transform">
                         <svg class="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -66,29 +66,29 @@
                     <div class="flex gap-2">
                         <button class="px-3 py-1 text-sm font-medium text-purple-600 bg-purple-50 rounded-lg hover:bg-purple-100 transition">1M</button>
                         <button class="px-3 py-1 text-sm font-medium text-gray-600 hover:bg-gray-100 rounded-lg transition">3M</button>
-                        <button class="px-3 py-1 text-sm font-medium text-gray-600 hover:bg-gray-100 rounded-lg transition">1J</button>
+                        <button class="px-3 py-1 text-sm font-medium text-gray-600 hover:bg-gray-100 rounded-lg transition">1Y</button>
                     </div>
                 </div>
                 <div class="relative h-64 flex items-center justify-center border-2 border-dashed border-gray-200 rounded-xl">
-                    <p class="text-gray-400">Chart komt hier (integreer met Chart.js of ApexCharts)</p>
+                    <p class="text-gray-400">Chart goes here (integrate with Chart.js or ApexCharts)</p>
                 </div>
             </div>
 
             <!-- Recent Trades -->
             <div class="bg-white rounded-2xl p-6 shadow-lg border border-gray-200">
-                <h2 class="text-xl font-bold text-gray-900 mb-6">Recente Trades</h2>
+                <h2 class="text-xl font-bold text-gray-900 mb-6">Recent Trades</h2>
                 <div class="space-y-4">
                     <div class="flex items-center justify-between p-4 bg-gradient-to-r from-green-50 to-emerald-50 rounded-xl border border-green-200">
                         <div class="flex items-center gap-3">
                             <div class="w-10 h-10 bg-green-500 rounded-lg flex items-center justify-center text-white font-bold">BTC</div>
                             <div>
                                 <p class="font-semibold text-gray-900">Bitcoin</p>
-                                <p class="text-sm text-gray-600">Koop • 0.05 BTC</p>
+                                <p class="text-sm text-gray-600">Buy • 0.05 BTC</p>
                             </div>
                         </div>
                         <div class="text-right">
                             <p class="font-bold text-green-600">+€234.50</p>
-                            <p class="text-sm text-gray-600">2 uur geleden</p>
+                            <p class="text-sm text-gray-600">2 hours ago</p>
                         </div>
                     </div>
 
@@ -97,12 +97,12 @@
                             <div class="w-10 h-10 bg-blue-500 rounded-lg flex items-center justify-center text-white font-bold">ETH</div>
                             <div>
                                 <p class="font-semibold text-gray-900">Ethereum</p>
-                                <p class="text-sm text-gray-600">Verkoop • 1.2 ETH</p>
+                                <p class="text-sm text-gray-600">Sell • 1.2 ETH</p>
                             </div>
                         </div>
                         <div class="text-right">
                             <p class="font-bold text-red-600">-€89.20</p>
-                            <p class="text-sm text-gray-600">5 uur geleden</p>
+                            <p class="text-sm text-gray-600">5 hours ago</p>
                         </div>
                     </div>
 
@@ -111,12 +111,12 @@
                             <div class="w-10 h-10 bg-purple-500 rounded-lg flex items-center justify-center text-white font-bold">SOL</div>
                             <div>
                                 <p class="font-semibold text-gray-900">Solana</p>
-                                <p class="text-sm text-gray-600">Koop • 10 SOL</p>
+                                <p class="text-sm text-gray-600">Buy • 10 SOL</p>
                             </div>
                         </div>
                         <div class="text-right">
                             <p class="font-bold text-green-600">+€156.80</p>
-                            <p class="text-sm text-gray-600">1 dag geleden</p>
+                            <p class="text-sm text-gray-600">1 day ago</p>
                         </div>
                     </div>
                 </div>
@@ -125,7 +125,7 @@
 
         <!-- Quick Actions -->
         <div class="bg-gradient-to-r from-purple-50 to-pink-50 rounded-2xl p-6 border border-purple-200">
-            <h2 class="text-xl font-bold text-gray-900 mb-4">Snelle Acties</h2>
+            <h2 class="text-xl font-bold text-gray-900 mb-4">Quick Actions</h2>
             <div class="grid gap-4 md:grid-cols-4">
                 <button class="flex items-center gap-3 p-4 bg-white rounded-xl shadow hover:shadow-lg transition-all hover:-translate-y-1 group">
                     <div class="w-10 h-10 bg-gradient-to-br from-purple-500 to-pink-500 rounded-lg flex items-center justify-center group-hover:scale-110 transition-transform">
@@ -133,7 +133,7 @@
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/>
                         </svg>
                     </div>
-                    <span class="font-semibold text-gray-900">Nieuwe Trade</span>
+                    <span class="font-semibold text-gray-900">New Trade</span>
                 </button>
                 <button class="flex items-center gap-3 p-4 bg-white rounded-xl shadow hover:shadow-lg transition-all hover:-translate-y-1 group">
                     <div class="w-10 h-10 bg-gradient-to-br from-orange-500 to-yellow-500 rounded-lg flex items-center justify-center group-hover:scale-110 transition-transform">
@@ -149,7 +149,7 @@
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253"/>
                         </svg>
                     </div>
-                    <span class="font-semibold text-gray-900">Lessen</span>
+                    <span class="font-semibold text-gray-900">Lessons</span>
                 </button>
                 <button class="flex items-center gap-3 p-4 bg-white rounded-xl shadow hover:shadow-lg transition-all hover:-translate-y-1 group">
                     <div class="w-10 h-10 bg-gradient-to-br from-yellow-500 to-orange-500 rounded-lg flex items-center justify-center group-hover:scale-110 transition-transform">

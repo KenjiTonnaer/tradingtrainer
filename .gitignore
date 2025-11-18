@@ -21,3 +21,10 @@ yarn-error.log
 /.nova
 /.vscode
 /.zed
+
+# Project-specific ignores
+# Exclude documentation folder from pushes
+/docs/
+
+# Exclude local notes file(s)
+/aantekeningen*

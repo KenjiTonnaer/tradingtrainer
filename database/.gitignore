@@ -1,1 +1,2 @@
+# Ignore local SQLite databases in this folder
 *.sqlite*

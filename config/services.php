@@ -35,4 +35,17 @@ return [
         ],
     ],
 
+    'finnhub' => [
+        'api_key' => env('FINNHUB_API_KEY'),
+        'base_url' => 'https://finnhub.io/api/v1',
+        'ws_url' => 'wss://ws.finnhub.io',
+    ],
+
+    'alpaca' => [
+        'key' => env('ALPACA_KEY'),
+        'secret' => env('ALPACA_SECRET'),
+        'base_url' => 'https://data.alpaca.markets/v2',
+        'ws_url' => 'wss://stream.data.alpaca.markets/v2/iex',
+    ],
+
 ];
