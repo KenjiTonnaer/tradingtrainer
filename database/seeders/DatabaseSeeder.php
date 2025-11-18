@@ -3,8 +3,9 @@
 namespace Database\Seeders;
 
 use App\Models\User;
-// use Illuminate\Database\Console\Seeds\WithoutModelEvents;
+use App\Models\Wallet;
 use Illuminate\Database\Seeder;
+use Illuminate\Support\Facades\Hash;
 
 class DatabaseSeeder extends Seeder
 {
@@ -13,11 +14,49 @@ class DatabaseSeeder extends Seeder
      */
     public function run(): void
     {
-        // User::factory(10)->create();
+        // Seed users with wallets
+        $this->call(WalletSeeder::class);
 
-        User::factory()->create([
+        // Create Thijs account
+        $thijs = User::create([
+            'name' => 'Thijs',
+            'email' => 'thijs@gmail.com',
+            'password' => Hash::make('password123'),
+            'is_admin' => false,
+            'email_verified_at' => now(),
+        ]);
+
+        Wallet::create([
+            'user_id' => $thijs->id,
+            'balance' => 100000.00,
+            'currency' => 'EUR',
+        ]);
+
+        // Create Kenji account (admin)
+        $kenji = User::create([
+            'name' => 'Kenji',
+            'email' => 'kenji@gmail.com',
+            'password' => Hash::make('password123'),
+            'is_admin' => true,
+            'email_verified_at' => now(),
+        ]);
+
+        Wallet::create([
+            'user_id' => $kenji->id,
+            'balance' => 100000.00,
+            'currency' => 'EUR',
+        ]);
+
+        // Create test user with wallet
+        $testUser = User::factory()->create([
             'name' => 'Test User',
             'email' => 'test@example.com',
+        ]);
+
+        Wallet::create([
+            'user_id' => $testUser->id,
+            'balance' => 50000.00,
+            'currency' => 'EUR',
         ]);
     }
 }
