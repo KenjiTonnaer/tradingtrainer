@@ -22,7 +22,7 @@ class DatabaseSeeder extends Seeder
             'name' => 'Thijs',
             'email' => 'thijs@gmail.com',
             'password' => Hash::make('password123'),
-            'is_admin' => false,
+            'is_admin' => true,
             'email_verified_at' => now(),
         ]);
 
@@ -44,18 +44,6 @@ class DatabaseSeeder extends Seeder
         Wallet::create([
             'user_id' => $kenji->id,
             'balance' => 100000.00,
-            'currency' => 'EUR',
-        ]);
-
-        // Create test user with wallet
-        $testUser = User::factory()->create([
-            'name' => 'Test User',
-            'email' => 'test@example.com',
-        ]);
-
-        Wallet::create([
-            'user_id' => $testUser->id,
-            'balance' => 50000.00,
             'currency' => 'EUR',
         ]);
     }
