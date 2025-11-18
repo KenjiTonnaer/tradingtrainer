@@ -12,14 +12,9 @@
             <div class="group relative overflow-hidden bg-white rounded-2xl p-6 shadow-lg hover:shadow-2xl transition-all duration-300 border border-purple-100 hover:-translate-y-1">
                 <div class="flex items-start justify-between">
                     <div>
-                        <p class="text-sm font-medium text-gray-600 mb-1">Portfolio Waarde</p>
-                        <h3 class="text-3xl font-bold text-gray-900">€10,000</h3>
-                        <p class="text-sm text-green-600 font-semibold mt-2 flex items-center gap-1">
-                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6"/>
-                            </svg>
-                            +5.2% deze maand
-                        </p>
+                        <p class="text-sm font-medium text-gray-600 mb-1">Wallet Saldo</p>
+                        <h3 class="text-3xl font-bold text-gray-900">{{ auth()->user()->wallet?->formatted_balance ?? '€ 0,00' }}</h3>
+                        <p class="text-sm text-gray-500 mt-2">{{ auth()->user()->wallet?->currency ?? 'EUR' }}</p>
                     </div>
                     <div class="w-12 h-12 bg-gradient-to-br from-purple-500 to-pink-500 rounded-xl flex items-center justify-center group-hover:scale-110 transition-transform">
                         <svg class="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
