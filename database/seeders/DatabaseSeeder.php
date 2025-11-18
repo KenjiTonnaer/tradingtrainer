@@ -14,10 +14,7 @@ class DatabaseSeeder extends Seeder
      */
     public function run(): void
     {
-        // Seed users with wallets
-        $this->call(WalletSeeder::class);
-
-        // Create Thijs account
+        // Admin accounts eerst aanmaken
         $thijs = User::create([
             'name' => 'Thijs',
             'email' => 'thijs@gmail.com',
@@ -26,13 +23,7 @@ class DatabaseSeeder extends Seeder
             'email_verified_at' => now(),
         ]);
 
-        Wallet::create([
-            'user_id' => $thijs->id,
-            'balance' => 100000.00,
-            'currency' => 'EUR',
-        ]);
-
-        // Create Kenji account (admin)
+        // Kenji account (admin)
         $kenji = User::create([
             'name' => 'Kenji',
             'email' => 'kenji@gmail.com',
@@ -41,10 +32,7 @@ class DatabaseSeeder extends Seeder
             'email_verified_at' => now(),
         ]);
 
-        Wallet::create([
-            'user_id' => $kenji->id,
-            'balance' => 100000.00,
-            'currency' => 'EUR',
-        ]);
+        // Seed overige (demo) users + wallets (ook voor admins die nog geen wallet hebben)
+        $this->call(WalletSeeder::class);
     }
 }

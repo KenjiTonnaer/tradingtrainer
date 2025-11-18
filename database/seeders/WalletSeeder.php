@@ -4,6 +4,7 @@ namespace Database\Seeders;
 
 use App\Models\User;
 use App\Models\Wallet;
+use Faker\Factory as Faker;
 use Illuminate\Database\Console\Seeds\WithoutModelEvents;
 use Illuminate\Database\Seeder;
 
@@ -14,12 +15,16 @@ class WalletSeeder extends Seeder
      */
     public function run(): void
     {
-        // Maak 20 gebruikers met wallets
-        User::factory()->count(20)->create()->each(function ($user) {
-            // Creëer een wallet met een random bedrag tussen €100 en €1.000.000
+        $faker = Faker::create();
+
+        // Eventueel extra demo gebruikers toevoegen (20 stuks)
+        User::factory()->count(20)->create();
+
+        // Geef elke user precies één wallet met een random bedrag
+        User::whereDoesntHave('wallet')->each(function ($user) use ($faker) {
             Wallet::create([
                 'user_id' => $user->id,
-                'balance' => fake()->randomFloat(2, 100, 1000000),
+                'balance' => $faker->randomFloat(2, 100, 1000000),
                 'currency' => 'EUR',
             ]);
         });

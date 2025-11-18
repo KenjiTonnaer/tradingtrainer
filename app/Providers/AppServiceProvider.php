@@ -21,15 +21,6 @@ class AppServiceProvider extends ServiceProvider
      */
     public function boot(): void
     {
-        // Automatically create wallet when user is created
-        User::created(function (User $user) {
-            if (!$user->wallet) {
-                Wallet::create([
-                    'user_id' => $user->id,
-                    'balance' => 10000.00,
-                    'currency' => 'EUR',
-                ]);
-            }
-        });
+        // Wallet creatie gebeurt nu expliciet in de seeders om dubbele inserts te voorkomen.
     }
 }
