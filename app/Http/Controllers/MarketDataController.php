@@ -25,7 +25,8 @@ class MarketDataController extends Controller
         }
 
         if (!$key || !$secret || $key === 'your_alpaca_key_id') {
-            return response()->json(['error' => 'Alpaca keys not configured'], 400);
+            // Return simulated data when Alpaca keys not configured
+            return response()->json($this->getSimulatedBar(), 200);
         }
 
         // Choose a sensible lookback window per timeframe so that
@@ -171,5 +172,25 @@ class MarketDataController extends Controller
         }
 
         return response()->json(['error' => 'No data'], 204);
+    }
+
+    private function getSimulatedBar(): array
+    {
+        static $lastPrice = 150.0;
+        $volatility = 0.002;
+        $delta = $lastPrice * $volatility * (mt_rand(-100, 100) / 100.0);
+        $newPrice = max(0.01, $lastPrice + $delta);
+
+        $bar = [
+            'time' => time(),
+            'open' => round($lastPrice, 2),
+            'high' => round(max($lastPrice, $newPrice) * 1.001, 2),
+            'low' => round(min($lastPrice, $newPrice) * 0.999, 2),
+            'close' => round($newPrice, 2),
+            'volume' => mt_rand(1000000, 5000000),
+        ];
+
+        $lastPrice = $newPrice;
+        return $bar;
     }
 }

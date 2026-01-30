@@ -39,13 +39,11 @@ class StockChart extends Component
     public function changeTimeframe(string $timeframe)
     {
         $this->timeframe = $timeframe;
-        $this->dispatch('timeframeChanged', timeframe: $timeframe);
     }
 
     public function changeSymbol(string $symbol)
     {
         $this->symbol = strtoupper($symbol);
-        $this->dispatch('symbolChanged', symbol: $this->symbol);
     }
 
     public function getHistoricalData()
@@ -113,10 +111,6 @@ class StockChart extends Component
 
     protected function getSimulatedData(): array
     {
-        $config = $this->timeframeMap[$this->timeframe] ?? $this->timeframeMap['1D'];
-        $days = $config['days'];
-        $resolution = $config['resolution'];
-
         // Bepaal aantal candles op basis van timeframe
         $candleCount = match($this->timeframe) {
             '1m' => 390, // ~6.5 uur
@@ -126,9 +120,9 @@ class StockChart extends Component
             '1h' => 180,
             '6h' => 120,
             '12h' => 60,
-            '1D' => min($days, 365),
-            '30D' => min($days / 30, 36),
-            '6M' => min($days / 180, 10),
+            '1D' => 365,
+            '30D' => 36,
+            '6M' => 10,
             '1Y' => 12,
             'ALL' => 60,
             default => 100,

@@ -24,35 +24,35 @@
 
                 @if($isCrypto)
                     <!-- Crypto Selector -->
-                    <select wire:model.live="symbol" class="px-4 py-2 bg-gradient-to-r from-purple-50 to-pink-50 border-2 border-purple-300 rounded-lg text-gray-900 font-bold text-lg focus:outline-none focus:ring-2 focus:ring-purple-500">
+                    <select wire:change="changeSymbol($event.target.value)" class="px-4 py-2 bg-gradient-to-r from-purple-50 to-pink-50 border-2 border-purple-300 rounded-lg text-gray-900 font-bold text-lg focus:outline-none focus:ring-2 focus:ring-purple-500">
                         <optgroup label="💰 Crypto (24/7 Live via CoinGecko)">
-                            <option value="BTC">₿ Bitcoin</option>
-                            <option value="ETH">Ξ Ethereum</option>
-                            <option value="SOL">◎ Solana</option>
-                            <option value="DOGE">Ð Dogecoin</option>
-                            <option value="XRP">✕ Ripple</option>
-                            <option value="ADA">₳ Cardano</option>
-                            <option value="LINK">🔗 Chainlink</option>
-                            <option value="DOT">● Polkadot</option>
-                            <option value="MATIC">⬡ Polygon</option>
-                            <option value="LTC">Ł Litecoin</option>
-                            <option value="AVAX">🔺 Avalanche</option>
+                            <option value="BTC" @selected($symbol === 'BTC')>₿ Bitcoin</option>
+                            <option value="ETH" @selected($symbol === 'ETH')>Ξ Ethereum</option>
+                            <option value="SOL" @selected($symbol === 'SOL')>◎ Solana</option>
+                            <option value="DOGE" @selected($symbol === 'DOGE')>Ð Dogecoin</option>
+                            <option value="XRP" @selected($symbol === 'XRP')>✕ Ripple</option>
+                            <option value="ADA" @selected($symbol === 'ADA')>₳ Cardano</option>
+                            <option value="LINK" @selected($symbol === 'LINK')>🔗 Chainlink</option>
+                            <option value="DOT" @selected($symbol === 'DOT')>● Polkadot</option>
+                            <option value="MATIC" @selected($symbol === 'MATIC')>⬡ Polygon</option>
+                            <option value="LTC" @selected($symbol === 'LTC')>Ł Litecoin</option>
+                            <option value="AVAX" @selected($symbol === 'AVAX')>🔺 Avalanche</option>
                         </optgroup>
                     </select>
                 @else
                     <!-- Stocks Selector -->
-                    <select wire:model.live="symbol" class="px-4 py-2 bg-gradient-to-r from-purple-50 to-pink-50 border-2 border-purple-300 rounded-lg text-gray-900 font-bold text-lg focus:outline-none focus:ring-2 focus:ring-purple-500">
+                    <select wire:change="changeSymbol($event.target.value)" class="px-4 py-2 bg-gradient-to-r from-purple-50 to-pink-50 border-2 border-purple-300 rounded-lg text-gray-900 font-bold text-lg focus:outline-none focus:ring-2 focus:ring-purple-500">
                         <optgroup label="🇺🇸 US Stocks (9:30–16:00 EST)">
-                            <option value="AAPL">AAPL - Apple Inc.</option>
-                            <option value="TSLA">TSLA - Tesla</option>
-                            <option value="MSFT">MSFT - Microsoft</option>
-                            <option value="GOOGL">GOOGL - Alphabet (Google)</option>
-                            <option value="AMZN">AMZN - Amazon</option>
-                            <option value="META">META - Meta Platforms</option>
-                            <option value="NVDA">NVDA - NVIDIA</option>
-                            <option value="AMD">AMD - Advanced Micro Devices</option>
-                            <option value="NFLX">NFLX - Netflix</option>
-                            <option value="DIS">DIS - Disney</option>
+                            <option value="AAPL" @selected($symbol === 'AAPL')>AAPL - Apple Inc.</option>
+                            <option value="TSLA" @selected($symbol === 'TSLA')>TSLA - Tesla</option>
+                            <option value="MSFT" @selected($symbol === 'MSFT')>MSFT - Microsoft</option>
+                            <option value="GOOGL" @selected($symbol === 'GOOGL')>GOOGL - Alphabet (Google)</option>
+                            <option value="AMZN" @selected($symbol === 'AMZN')>AMZN - Amazon</option>
+                            <option value="META" @selected($symbol === 'META')>META - Meta Platforms</option>
+                            <option value="NVDA" @selected($symbol === 'NVDA')>NVDA - NVIDIA</option>
+                            <option value="AMD" @selected($symbol === 'AMD')>AMD - Advanced Micro Devices</option>
+                            <option value="NFLX" @selected($symbol === 'NFLX')>NFLX - Netflix</option>
+                            <option value="DIS" @selected($symbol === 'DIS')>DIS - Disney</option>
                         </optgroup>
                     </select>
                 @endif
@@ -517,23 +517,23 @@
             // Initialize secure server polling (no secrets in browser)
             startServerPolling();
 
-            // Listen for timeframe changes
-            Livewire.on('timeframeChanged', (event) => {
-                currentTf = event.timeframe;
-                // Let Livewire re-render DOM, then pull fresh dataset
-                setTimeout(() => { rehydrateFromDom(); startServerPolling(); }, 0);
-            });
-
-            // Listen for symbol changes
-            Livewire.on('symbolChanged', (event) => {
-                currentSymbol = event.symbol;
-                setTimeout(() => { rehydrateFromDom(); startServerPolling(); }, 0);
-            });
-
-            // Also update after any Livewire DOM patch (dropdown change etc.)
-            document.addEventListener('livewire:navigated', () => {
+            // Listen for changes to DOM attributes (when Livewire updates the data-*)
+            const domObserver = new MutationObserver(() => {
                 rehydrateFromDom();
                 startServerPolling();
+            });
+
+            domObserver.observe(container, {
+                attributes: true,
+                attributeFilter: ['data-candles', 'data-timeframe'],
+            });
+
+            // Also update when Livewire re-renders
+            document.addEventListener('livewire:updated', () => {
+                setTimeout(() => {
+                    rehydrateFromDom();
+                    startServerPolling();
+                }, 50);
             });
 
             // Cleanup on component destroy
@@ -542,6 +542,7 @@
                 if (simulationInterval) clearInterval(simulationInterval);
                 if (pollInterval) clearInterval(pollInterval);
                 resizeObserver.disconnect();
+                domObserver.disconnect();
             });
         })();
     </script>
