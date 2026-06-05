@@ -241,7 +241,6 @@
             const symbol = '{{ $symbol }}';
             const chartId = `stock-chart-${symbol}`;
             const volumeChartId = `volume-chart-${symbol}`;
-            const wsStatusId = `ws-status-${symbol}`;
             const wsIndicatorId = `ws-indicator-${symbol}`;
             const wsTextId = `ws-text-${symbol}`;
 
@@ -250,14 +249,12 @@
 
             if (!container || !volumeContainer) return;
 
-            // Parse initial data
             const initialData = JSON.parse(container.dataset.candles || '[]');
-            // No secrets in the browser. We will poll a secure backend endpoint instead of a direct WS.
 
-            // Create main chart with light theme to match dashboard
+            // ── Hoofdchart ────────────────────────────────────────────────────
             const chart = LightweightCharts.createChart(container, {
                 layout: {
-                    background: { color: '#ffffff' },
+                    background: { type: 'solid', color: '#ffffff' },
                     textColor: '#1f2937',
                 },
                 grid: {
@@ -267,9 +264,7 @@
                 crosshair: {
                     mode: LightweightCharts.CrosshairMode.Normal,
                 },
-                rightPriceScale: {
-                    borderColor: '#e5e7eb',
-                },
+                rightPriceScale: { borderColor: '#e5e7eb' },
                 timeScale: {
                     borderColor: '#e5e7eb',
                     timeVisible: true,
@@ -279,8 +274,8 @@
                 height: 500,
             });
 
-            // Create candlestick series with gradient colors matching dashboard
-            const candleSeries = chart.addCandlestickSeries({
+            // v5 API: addSeries(SeriesType, options)
+            const candleSeries = chart.addSeries(LightweightCharts.CandlestickSeries, {
                 upColor: '#10b981',
                 downColor: '#ef4444',
                 borderVisible: false,
@@ -288,258 +283,164 @@
                 wickDownColor: '#ef4444',
             });
 
-            // Set initial data and ensure it's visible
-            function applyAllData(data){
-                candleSeries.setData(data);
-                const volumeData = data.map(candle => ({
-                    time: candle.time,
-                    value: candle.volume || 0,
-                    color: candle.close >= candle.open ? '#10b98180' : '#ef444480',
-                }));
-                volumeSeries.setData(volumeData);
-                try { chart.timeScale().fitContent(); } catch (e) {}
-                try { volumeChart.timeScale().fitContent(); } catch (e) {}
-            }
-            applyAllData(initialData);
-
-            // Create volume chart with light theme
+            // ── Volume chart — AANMAKEN VÓÓR applyAllData ────────────────────
             const volumeChart = LightweightCharts.createChart(volumeContainer, {
                 layout: {
-                    background: { color: '#ffffff' },
+                    background: { type: 'solid', color: '#ffffff' },
                     textColor: '#1f2937',
                 },
                 grid: {
                     vertLines: { color: '#f3f4f6' },
                     horzLines: { color: '#f3f4f6' },
                 },
-                rightPriceScale: {
-                    borderColor: '#e5e7eb',
-                },
-                timeScale: {
-                    borderColor: '#e5e7eb',
-                    visible: false,
-                },
+                rightPriceScale: { borderColor: '#e5e7eb' },
+                timeScale: { borderColor: '#e5e7eb', visible: false },
                 width: volumeContainer.clientWidth,
                 height: 120,
             });
 
-            // Create volume series
-            const volumeSeries = volumeChart.addHistogramSeries({
+            // v5 API
+            const volumeSeries = volumeChart.addSeries(LightweightCharts.HistogramSeries, {
                 color: '#3b82f6',
-                priceFormat: {
-                    type: 'volume',
-                },
+                priceFormat: { type: 'volume' },
             });
 
-            // Set volume handled in applyAllData
+            // ── Nu pas applyAllData aanroepen (beide series bestaan nu) ───────
+            function applyAllData(data) {
+                candleSeries.setData(data);
+                const volumeData = data.map(c => ({
+                    time: c.time,
+                    value: c.volume || 0,
+                    color: c.close >= c.open ? '#10b98180' : '#ef444480',
+                }));
+                volumeSeries.setData(volumeData);
+                try { chart.timeScale().fitContent(); } catch (e) {}
+                try { volumeChart.timeScale().fitContent(); } catch (e) {}
+            }
 
-            // Sync time scales
+            applyAllData(initialData);
+
+            // ── Timescale sync ────────────────────────────────────────────────
             chart.timeScale().subscribeVisibleTimeRangeChange(() => {
-                const timeRange = chart.timeScale().getVisibleRange();
-                if (timeRange) {
-                    volumeChart.timeScale().setVisibleRange(timeRange);
-                }
+                const range = chart.timeScale().getVisibleRange();
+                if (range) volumeChart.timeScale().setVisibleRange(range);
             });
 
-            // Handle window resize
+            // ── Resize ────────────────────────────────────────────────────────
             const resizeObserver = new ResizeObserver(entries => {
-                if (entries.length === 0) return;
-                const newWidth = entries[0].contentRect.width;
-                chart.applyOptions({ width: newWidth });
-                volumeChart.applyOptions({ width: newWidth });
+                if (!entries.length) return;
+                const w = entries[0].contentRect.width;
+                chart.applyOptions({ width: w });
+                volumeChart.applyOptions({ width: w });
             });
             resizeObserver.observe(container);
 
-            // WebSocket connection
-            let ws = null;
-            let wsReconnectAttempts = 0;
-            const maxReconnectAttempts = 5;
-
+            // ── WS status helper ──────────────────────────────────────────────
             function updateWSStatus(status, text) {
                 const indicator = document.getElementById(wsIndicatorId);
                 const textEl = document.getElementById(wsTextId);
-
-                if (indicator && textEl) {
-                    const colors = {
-                        connecting: 'bg-yellow-500',
-                        connected: 'bg-green-500',
-                        disconnected: 'bg-red-500',
-                        error: 'bg-red-500',
-                    };
-
-                    indicator.className = `inline-block w-2 h-2 rounded-full ${colors[status] || 'bg-gray-500'}`;
-                    textEl.textContent = text;
-                }
+                if (!indicator || !textEl) return;
+                const colors = {
+                    connecting: 'bg-yellow-500',
+                    connected:  'bg-green-500',
+                    disconnected: 'bg-red-500',
+                };
+                indicator.className = `inline-block w-2 h-2 rounded-full ${colors[status] || 'bg-gray-500'}`;
+                textEl.textContent = text;
             }
 
+            // ── Polling ───────────────────────────────────────────────────────
             let pollInterval = null;
-            let currentSymbol = symbol;
             let currentTf = container.dataset.timeframe || '1D';
 
-            function rehydrateFromDom(){
-                const fresh = document.getElementById(chartId);
-                if (!fresh) return;
-                try{
-                    const data = JSON.parse(fresh.dataset.candles || '[]');
-                    if (Array.isArray(data) && data.length){
-                        // replace initialData contents
-                        initialData.length = 0;
-                        data.forEach(d=>initialData.push(d));
-                        currentTf = fresh.dataset.timeframe || currentTf;
-                        applyAllData(initialData);
-                    }
-                }catch(e){ console.warn('Rehydrate parse failed', e); }
+            function mapTimeframe(tf) {
+                const map = { '1m':'1Min','5m':'5Min','15m':'15Min','30m':'30Min',
+                              '1h':'1Hour','6h':'1Hour','12h':'1Hour' };
+                return map[tf] || '1Day';
             }
 
-            function mapTimeframe(tf) {
-                switch (tf) {
-                    case '1m': return '1Min';
-                    case '5m': return '5Min';
-                    case '15m': return '15Min';
-                    case '30m': return '30Min';
-                    case '1h': return '1Hour';
-                    case '6h': return '1Hour';
-                    case '12h': return '1Hour';
-                    case '1D':
-                    case '30D':
-                    case '6M':
-                    case '1Y':
-                    case 'ALL':
-                        return '1Day';
-                    default:
-                        return '1Min';
-                }
+            function startSimulatedUpdates() {
+                updateWSStatus('disconnected', 'Simulated');
+                setInterval(() => {
+                    const last = initialData[initialData.length - 1];
+                    if (!last) return;
+                    const change = last.close * 0.002 * (Math.random() * 2 - 1);
+                    const newPrice = Math.max(0.01, last.close + change);
+                    const candle = {
+                        time: Math.floor(Date.now() / 1000),
+                        open: last.close,
+                        high: Math.max(last.close, newPrice),
+                        low:  Math.min(last.close, newPrice),
+                        close: newPrice,
+                        volume: Math.floor(Math.random() * 100000),
+                    };
+                    initialData.push(candle);
+                    candleSeries.update(candle);
+                    volumeSeries.update({ time: candle.time, value: candle.volume,
+                        color: candle.close >= candle.open ? '#10b98180' : '#ef444480' });
+                    if (initialData.length > 1000) initialData.shift();
+                }, 2000);
             }
 
             async function startServerPolling() {
                 if (pollInterval) clearInterval(pollInterval);
                 updateWSStatus('connecting', 'Connecting...');
-                let firstSuccess = false;
-                let failureCount = 0;
+                let failures = 0;
+                let connected = false;
+
                 const poll = async () => {
                     try {
-                        const tfParam = mapTimeframe(currentTf);
-                        const url = `/markets/${encodeURIComponent(currentSymbol)}/bars/latest?timeframe=${encodeURIComponent(tfParam)}`;
-                        const res = await fetch(url, { credentials: 'same-origin', headers: { 'Accept': 'application/json' } });
-                        if (!res.ok) {
-                            failureCount++;
-                            // On auth/config errors, fall back to simulation quickly
-                            if (failureCount >= 3 || [400,401,403,429,502,503].includes(res.status)) {
-                                updateWSStatus('disconnected', 'Simulated');
-                                if (pollInterval) clearInterval(pollInterval);
-                                startSimulatedUpdates();
-                            }
-                            return;
-                        }
+                        const tf = mapTimeframe(currentTf);
+                        const res = await fetch(
+                            `/markets/${encodeURIComponent(symbol)}/bars/latest?timeframe=${encodeURIComponent(tf)}`,
+                            { credentials: 'same-origin', headers: { Accept: 'application/json' } }
+                        );
+                        if (!res.ok) { if (++failures >= 3) { clearInterval(pollInterval); startSimulatedUpdates(); } return; }
                         const bar = await res.json();
-                        if (!bar || !bar.time) {
-                            // Treat empty/no-data responses as transient failures
-                            failureCount++;
-                            if (!firstSuccess && failureCount >= 5) {
-                                updateWSStatus('disconnected', 'Simulated');
-                                if (pollInterval) clearInterval(pollInterval);
-                                startSimulatedUpdates();
-                            }
-                            return;
-                        }
+                        if (!bar?.time) { if (!connected && ++failures >= 5) { clearInterval(pollInterval); startSimulatedUpdates(); } return; }
 
-                        const lastCandle = initialData[initialData.length - 1];
-                        if (lastCandle && bar.time === lastCandle.time) {
-                            initialData[initialData.length - 1] = bar;
-                        } else {
-                            initialData.push(bar);
-                        }
-                        if (initialData.length === 1) {
-                            candleSeries.setData(initialData);
-                            volumeSeries.setData([{ time: bar.time, value: bar.volume, color: bar.close >= bar.open ? '#10b98180' : '#ef444480' }]);
-                        } else {
-                            candleSeries.update(bar);
-                            volumeSeries.update({ time: bar.time, value: bar.volume, color: bar.close >= bar.open ? '#10b98180' : '#ef444480' });
-                        }
+                        const last = initialData[initialData.length - 1];
+                        if (last && bar.time === last.time) initialData[initialData.length - 1] = bar;
+                        else initialData.push(bar);
 
-                        if (!firstSuccess) {
-                            updateWSStatus('connected', 'Live (secure)');
-                            firstSuccess = true;
-                            failureCount = 0;
-                        }
+                        candleSeries.update(bar);
+                        volumeSeries.update({ time: bar.time, value: bar.volume,
+                            color: bar.close >= bar.open ? '#10b98180' : '#ef444480' });
+
+                        if (!connected) { updateWSStatus('connected', 'Live'); connected = true; failures = 0; }
                     } catch (e) {
-                        console.warn('Polling error', e);
-                        failureCount++;
-                        if (failureCount >= 5) {
-                            updateWSStatus('disconnected', 'Simulated');
-                            if (pollInterval) clearInterval(pollInterval);
-                            startSimulatedUpdates();
-                        }
+                        if (++failures >= 5) { clearInterval(pollInterval); startSimulatedUpdates(); }
                     }
                 };
 
-                // Initial tick and interval
                 await poll();
                 pollInterval = setInterval(poll, 2000);
             }
 
-            // Simulated updates fallback
-            let simulationInterval = null;
-
-            function startSimulatedUpdates() {
-                if (simulationInterval) return;
-
-                console.log('🎲 Starting simulated price updates...');
-                updateWSStatus('disconnected', 'Simulated');
-
-                simulationInterval = setInterval(() => {
-                    const lastCandle = initialData[initialData.length - 1];
-                    if (!lastCandle) return;
-
-                    const volatility = 0.002;
-                    const change = lastCandle.close * volatility * (Math.random() * 2 - 1);
-                    const newPrice = Math.max(0.01, lastCandle.close + change);
-
-                    const newCandle = {
-                        time: Math.floor(Date.now() / 1000),
-                        open: lastCandle.close,
-                        high: Math.max(lastCandle.close, newPrice),
-                        low: Math.min(lastCandle.close, newPrice),
-                        close: newPrice,
-                        volume: Math.floor(Math.random() * 100000),
-                    };
-
-                    initialData.push(newCandle);
-                    candleSeries.update(newCandle);
-
-                    // Keep only last 1000 candles
-                    if (initialData.length > 1000) {
-                        initialData.shift();
-                    }
-                }, 2000);
-            }
-
-            // Initialize secure server polling (no secrets in browser)
             startServerPolling();
 
-            // Listen for changes to DOM attributes (when Livewire updates the data-*)
+            // ── Livewire re-render re-hydrate ─────────────────────────────────
             const domObserver = new MutationObserver(() => {
-                rehydrateFromDom();
-                startServerPolling();
+                const fresh = document.getElementById(chartId);
+                if (!fresh) return;
+                try {
+                    const data = JSON.parse(fresh.dataset.candles || '[]');
+                    if (data.length) {
+                        currentTf = fresh.dataset.timeframe || currentTf;
+                        initialData.length = 0;
+                        data.forEach(d => initialData.push(d));
+                        applyAllData(initialData);
+                        startServerPolling();
+                    }
+                } catch (e) { console.warn('Rehydrate failed', e); }
             });
+            domObserver.observe(container, { attributes: true, attributeFilter: ['data-candles','data-timeframe'] });
 
-            domObserver.observe(container, {
-                attributes: true,
-                attributeFilter: ['data-candles', 'data-timeframe'],
-            });
-
-            // Also update when Livewire re-renders
             document.addEventListener('livewire:updated', () => {
-                setTimeout(() => {
-                    rehydrateFromDom();
-                    startServerPolling();
-                }, 50);
+                setTimeout(() => { domObserver.takeRecords(); }, 50);
             });
 
-            // Cleanup on component destroy
             document.addEventListener('livewire:navigating', () => {
-                if (ws) try { ws.close(); } catch (e) {}
-                if (simulationInterval) clearInterval(simulationInterval);
                 if (pollInterval) clearInterval(pollInterval);
                 resizeObserver.disconnect();
                 domObserver.disconnect();

@@ -11,7 +11,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
 	const symbol = el.dataset.symbol || 'AAPL';
 	const chart = createChart(el, { width: el.clientWidth || 800, height: 400, layout: { background: { type: 'solid', color: '#0f172a' }, textColor: '#fff' }, grid: { vertLines: { color: '#1e293b' }, horzLines: { color: '#1e293b' } } });
-	const lineSeries = chart.addLineSeries({ color: '#10b981', lineWidth: 2 });
+	const lineSeries = chart.addSeries(LightweightChartsAll.LineSeries, { color: '#10b981', lineWidth: 2 });
 
 	const fetchSeries = async () => {
 		try {
