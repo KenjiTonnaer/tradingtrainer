@@ -9,6 +9,7 @@ use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
 use Illuminate\Support\Str;
 use Laravel\Fortify\TwoFactorAuthenticatable;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 
 class User extends Authenticatable
 {
@@ -26,6 +27,16 @@ class User extends Authenticatable
         'password',
         'is_admin',
     ];
+
+        public function paperTrades(): HasMany
+    {
+        return $this->hasMany(PaperTrade::class);
+    }
+
+    public function paperPositions(): HasMany
+    {
+        return $this->hasMany(PaperPosition::class);
+    }
 
     /**
      * The attributes that should be hidden for serialization.

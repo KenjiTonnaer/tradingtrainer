@@ -5,6 +5,7 @@ use Laravel\Fortify\Features;
 use Livewire\Volt\Volt;
 use App\Http\Controllers\MarketController;
 use App\Http\Controllers\MarketDataController;
+use App\Http\Controllers\TradeController;
 
 Route::get('/', function () {
     return view('home');
@@ -31,6 +32,11 @@ Route::middleware(['auth'])->group(function () {
             ),
         )
         ->name('two-factor.show');
+
+    Route::get('/trades',          [TradeController::class, 'index'])->name('trades.index');
+    Route::get('/portfolio',       [TradeController::class, 'portfolio'])->name('portfolio.index');
+    Route::post('/trades/buy',     [TradeController::class, 'buy'])->name('trades.buy');
+    Route::post('/trades/sell',    [TradeController::class, 'sell'])->name('trades.sell');
 });
 
 // Markets / Trading page with real-time charts (Finnhub API + WebSocket)
