@@ -48,4 +48,9 @@ return [
         'ws_url' => 'wss://stream.data.alpaca.markets/v2/iex',
     ],
 
+    'pieces' => [
+        'host' => env('PIECES_HOST', '127.0.0.1'),
+        'port' => env('PIECES_PORT', 39300),
+    ],
+
 ];
