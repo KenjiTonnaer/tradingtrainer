@@ -23,27 +23,57 @@
     --color-zinc-900: #171717;
     --color-zinc-950: #0a0a0a;
 
-    --color-accent: var(--color-neutral-800);
-    --color-accent-content: var(--color-neutral-800);
-    --color-accent-foreground: var(--color-white);
+    --color-accent: #7c3aed;
+    --color-accent-content: #fff;
+    --color-accent-foreground: #fff;
 }
 
 @layer theme {
     .dark {
-        --color-accent: var(--color-white);
-        --color-accent-content: var(--color-white);
-        --color-accent-foreground: var(--color-neutral-800);
+        --color-accent: #a78bfa;
+        --color-accent-content: #111827;
+        --color-accent-foreground: #fff;
     }
 }
 
 @layer base {
+    html {
+        background: #f8fafc;
+        color: #0f172a;
+    }
+
+    body {
+        font-family: var(--font-sans);
+        background:
+            radial-gradient(circle at top left, rgba(167, 139, 250, 0.12), transparent 28%),
+            radial-gradient(circle at bottom right, rgba(236, 72, 153, 0.10), transparent 30%),
+            #f8fafc;
+        color: #0f172a;
+        text-rendering: optimizeLegibility;
+        -webkit-font-smoothing: antialiased;
+        -moz-osx-font-smoothing: grayscale;
+    }
 
     *,
     ::after,
     ::before,
     ::backdrop,
     ::file-selector-button {
-        border-color: var(--color-gray-200, currentColor);
+        border-color: rgba(148, 163, 184, 0.24);
+    }
+
+    ::selection {
+        background: rgba(124, 58, 237, 0.18);
+    }
+}
+
+@layer components {
+    .soft-panel {
+        @apply rounded-2xl border border-slate-200/80 bg-white/80 shadow-[0_10px_30px_-18px_rgba(15,23,42,0.35)] backdrop-blur-sm;
+    }
+
+    .soft-button {
+        @apply inline-flex items-center justify-center rounded-xl border border-slate-200 bg-white px-4 py-2.5 text-sm font-semibold text-slate-700 transition hover:-translate-y-0.5 hover:border-violet-200 hover:bg-violet-50 hover:text-violet-700;
     }
 }
 
@@ -52,15 +82,11 @@
 }
 
 [data-flux-label] {
-    @apply  !mb-0 !leading-tight;
+    @apply !mb-0 !leading-tight;
 }
 
 input:focus[data-flux-control],
 textarea:focus[data-flux-control],
 select:focus[data-flux-control] {
-    @apply outline-hidden ring-2 ring-accent ring-offset-2 ring-offset-accent-foreground;
+    @apply outline-hidden ring-2 ring-violet-400 ring-offset-2 ring-offset-white;
 }
-
-/* \[:where(&)\]:size-4 {
-    @apply size-4;
-} */

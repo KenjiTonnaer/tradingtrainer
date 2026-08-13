@@ -3,8 +3,8 @@
     <head>
         @include('partials.head')
     </head>
-    <body class="min-h-screen bg-white dark:bg-zinc-800">
-        <flux:header container class="border-b border-zinc-200 bg-zinc-50 dark:border-zinc-700 dark:bg-zinc-900">
+    <body class="min-h-screen bg-slate-100 text-slate-900 antialiased">
+        <flux:header container class="border-b border-slate-200/80 bg-white/80 shadow-[0_10px_30px_-25px_rgba(15,23,42,0.35)] backdrop-blur-sm dark:border-zinc-700 dark:bg-zinc-900/80">
             <flux:sidebar.toggle class="lg:hidden" icon="bars-2" inset="left" />
 
             <a href="{{ route('dashboard') }}" class="ms-2 me-5 flex items-center space-x-2 rtl:space-x-reverse lg:ms-0" wire:navigate>
