@@ -59,16 +59,17 @@
             <div class="px-2 pt-2 pb-2 sidebar-header flex flex-col gap-2 w-full items-center">
                 <a href="{{ route('dashboard') }}" class="flex items-center justify-center space-x-2 rtl:space-x-reverse group" wire:navigate title="Dashboard">
                     <div class="w-10 h-10 brand-gradient rounded-xl flex items-center justify-center group-hover:scale-110 transition-transform">
-                        <svg class="h-6 w-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6"/>
+                        <svg class="h-5 w-5 text-white" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                            <path d="M3 17l6-6 4 4 8-8"/>
+                            <path d="M14 7h7v7"/>
                         </svg>
                     </div>
                     <span class="text-lg font-bold bg-gradient-to-r from-purple-600 via-pink-500 to-orange-500 bg-clip-text text-transparent brand-text">TradingTrainer</span>
                 </a>
                 <div class="toggle-row">
                     <button id="sidebar-collapse-toggle" type="button" class="icon-pill shadow ring-1 ring-purple-200 hover:ring-purple-300 transition" title="Toggle sidebar">
-                        <svg id="sidebar-collapse-icon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" class="w-5 h-5">
-                            <path fill-rule="evenodd" d="M15.78 7.72a.75.75 0 010 1.06L12.56 12l3.22 3.22a.75.75 0 11-1.06 1.06l-3.75-3.75a.75.75 0 010-1.06l3.75-3.75a.75.75 0 011.06 0z" clip-rule="evenodd" />
+                        <svg id="sidebar-collapse-icon" class="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                            <path d="M15 18l-6-6 6-6"/>
                         </svg>
                     </button>
                 </div>
