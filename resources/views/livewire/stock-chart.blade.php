@@ -13,7 +13,7 @@
     </div>
 
     <!-- Header met symbool en huidige prijs -->
-    <div class="bg-white rounded-2xl p-6 shadow-lg border border-gray-200 mb-6">
+    <div class="bg-slate-50 rounded-2xl p-6 shadow-[0_16px_30px_-22px_rgba(15,23,42,0.5)] border border-slate-200 mb-6">
         <div class="flex items-center justify-between flex-wrap gap-4 mb-4">
             <div class="flex items-center gap-4">
                 @php
@@ -118,7 +118,7 @@
 
     <!-- Quick Stats -->
     <div class="grid gap-4 md:grid-cols-4 mb-6">
-        <div class="bg-white rounded-xl p-4 shadow-lg border border-purple-100">
+        <div class="bg-slate-50 rounded-xl p-4 shadow-[0_14px_32px_-22px_rgba(15,23,42,0.5)] border border-slate-200">
             <div class="flex items-center justify-between">
                 <div>
                     <p class="text-xs font-medium text-gray-600 mb-1">Current Price</p>
@@ -131,7 +131,7 @@
                 </div>
             </div>
         </div>
-        <div class="bg-white rounded-xl p-4 shadow-lg border border-green-100">
+        <div class="bg-slate-50 rounded-xl p-4 shadow-[0_14px_32px_-22px_rgba(15,23,42,0.5)] border border-slate-200">
             <div class="flex items-center justify-between">
                 <div>
                     <p class="text-xs font-medium text-gray-600 mb-1">Daily Change</p>
@@ -146,7 +146,7 @@
                 </div>
             </div>
         </div>
-        <div class="bg-white rounded-xl p-4 shadow-lg border border-orange-100">
+        <div class="bg-slate-50 rounded-xl p-4 shadow-[0_14px_32px_-22px_rgba(15,23,42,0.5)] border border-slate-200">
             <div class="flex items-center justify-between">
                 <div>
                     <p class="text-xs font-medium text-gray-600 mb-1">Previous Close</p>
@@ -159,7 +159,7 @@
                 </div>
             </div>
         </div>
-        <div class="bg-white rounded-xl p-4 shadow-lg border border-blue-100">
+        <div class="bg-slate-50 rounded-xl p-4 shadow-[0_14px_32px_-22px_rgba(15,23,42,0.5)] border border-slate-200">
             <div class="flex items-center justify-between">
                 <div>
                     <p class="text-xs font-medium text-gray-600 mb-1">Timeframe</p>
@@ -180,7 +180,7 @@
         <!-- Linker kolom: charts -->
         <div class="flex-1 min-w-0 flex flex-col gap-4">
             <!-- Price Chart -->
-            <div class="bg-white rounded-2xl p-6 shadow-lg border border-gray-200">
+            <div class="bg-slate-50 rounded-2xl p-6 shadow-[0_16px_30px_-22px_rgba(15,23,42,0.5)] border border-slate-200">
                 <h3 class="text-lg font-bold text-gray-900 mb-4">Price Chart</h3>
                 <div
                     id="stock-chart-{{ $symbol }}"
@@ -193,7 +193,7 @@
             </div>
 
             <!-- Volume Chart -->
-            <div class="bg-white rounded-2xl p-6 shadow-lg border border-gray-200">
+            <div class="bg-slate-50 rounded-2xl p-6 shadow-[0_16px_30px_-22px_rgba(15,23,42,0.5)] border border-slate-200">
                 <h3 class="text-lg font-bold text-gray-900 mb-4">Volume</h3>
                 <div
                     id="volume-chart-{{ $symbol }}"
@@ -210,7 +210,7 @@
             x-data="tradePanel('{{ $symbol }}', {{ $currentQuote['c'] ?? 0 }})"
             x-init="init()"
         >
-            <div class="bg-white rounded-2xl shadow-lg border border-gray-200 overflow-hidden sticky top-4">
+            <div class="bg-slate-50 rounded-2xl shadow-[0_18px_32px_-22px_rgba(15,23,42,0.55)] border border-slate-200 overflow-hidden sticky top-4">
 
                 <!-- Panel header -->
                 <div class="bg-gradient-to-r from-purple-600 to-pink-500 px-6 py-4">

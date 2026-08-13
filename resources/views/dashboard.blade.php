@@ -24,7 +24,7 @@
         </div>
 
         <div class="grid gap-6 md:grid-cols-3">
-            <div class="group overflow-hidden rounded-3xl border border-violet-100 bg-white p-6 shadow-lg shadow-slate-200/60 transition-transform duration-200 hover:-translate-y-1">
+            <div class="group overflow-hidden rounded-3xl border border-slate-200 bg-slate-50 p-6 shadow-[0_14px_30px_-20px_rgba(15,23,42,0.45)] transition-transform duration-200 hover:-translate-y-1">
                 <div class="mb-4 flex items-start justify-between">
                     <div>
                         <p class="text-sm font-medium text-slate-500">Wallet saldo</p>
@@ -37,7 +37,7 @@
                 <p class="text-sm text-slate-500">Beschikbaar om nieuwe orders uit te voeren.</p>
             </div>
 
-            <div class="group overflow-hidden rounded-3xl border border-amber-100 bg-white p-6 shadow-lg shadow-slate-200/60 transition-transform duration-200 hover:-translate-y-1">
+            <div class="group overflow-hidden rounded-3xl border border-slate-200 bg-slate-50 p-6 shadow-[0_14px_30px_-20px_rgba(15,23,42,0.45)] transition-transform duration-200 hover:-translate-y-1">
                 <div class="mb-4 flex items-start justify-between">
                     <div>
                         <p class="text-sm font-medium text-slate-500">Totaal trades</p>
@@ -50,7 +50,7 @@
                 <p class="text-sm text-slate-500">{{ $sellTrades->count() }} gerealiseerde verkopen afgerond.</p>
             </div>
 
-            <div class="group overflow-hidden rounded-3xl border border-emerald-100 bg-white p-6 shadow-lg shadow-slate-200/60 transition-transform duration-200 hover:-translate-y-1">
+            <div class="group overflow-hidden rounded-3xl border border-slate-200 bg-slate-50 p-6 shadow-[0_14px_30px_-20px_rgba(15,23,42,0.45)] transition-transform duration-200 hover:-translate-y-1">
                 <div class="mb-4 flex items-start justify-between">
                     <div>
                         <p class="text-sm font-medium text-slate-500">Win rate</p>
@@ -100,7 +100,7 @@
                 </div>
             </div>
 
-            <div class="rounded-3xl border border-slate-200 bg-white p-6 shadow-lg shadow-slate-200/60">
+            <div class="rounded-3xl border border-slate-200 bg-slate-50 p-6 shadow-[0_16px_30px_-22px_rgba(15,23,42,0.5)]">
                 <div class="mb-5">
                     <p class="text-sm font-semibold uppercase tracking-[0.15em] text-slate-500">Recent trades</p>
                     <h2 class="mt-1 text-2xl font-black text-slate-900">Laatste orders</h2>

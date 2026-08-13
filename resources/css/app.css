@@ -45,9 +45,9 @@
     body {
         font-family: var(--font-sans);
         background:
-            radial-gradient(circle at top left, rgba(167, 139, 250, 0.12), transparent 28%),
-            radial-gradient(circle at bottom right, rgba(236, 72, 153, 0.10), transparent 30%),
-            #f8fafc;
+            radial-gradient(circle at top left, rgba(167, 139, 250, 0.14), transparent 28%),
+            radial-gradient(circle at bottom right, rgba(59, 130, 246, 0.08), transparent 24%),
+            linear-gradient(180deg, #edf2f7 0%, #f8fafc 12%, #f1f5f9 100%);
         color: #0f172a;
         text-rendering: optimizeLegibility;
         -webkit-font-smoothing: antialiased;
@@ -69,7 +69,7 @@
 
 @layer components {
     .soft-panel {
-        @apply rounded-2xl border border-slate-200/80 bg-white/80 shadow-[0_10px_30px_-18px_rgba(15,23,42,0.35)] backdrop-blur-sm;
+        @apply rounded-2xl border border-slate-200 bg-slate-50 shadow-[0_12px_32px_-22px_rgba(15,23,42,0.42)] backdrop-blur-sm;
     }
 
     .soft-button {

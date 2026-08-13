@@ -7,9 +7,11 @@
             .app-sidebar{
                 width:260px;
                 transition:width .2s ease,border-color .2s ease,background .2s ease,box-shadow .2s ease;
-                background:linear-gradient(180deg,rgba(255,255,255,.96) 0%,rgba(245,243,255,.96) 42%,rgba(239,246,255,.94) 100%);
+                background:linear-gradient(180deg,#f8fafc 0%,#f4f7fb 35%,#eef2ff 100%);
                 overflow:hidden;
                 position:relative;
+                border:1px solid rgba(148,163,184,.38);
+                border-left:none;
                 border-top-right-radius:18px !important;
                 border-bottom-right-radius:18px !important;
                 box-shadow:6px 0 28px -16px rgba(124,58,237,.18),0 10px 28px -20px rgba(59,130,246,.18),0 2px 4px rgba(15,23,42,.04);
