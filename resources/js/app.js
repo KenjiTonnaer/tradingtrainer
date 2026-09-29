@@ -21,12 +21,26 @@ const initializeStockCharts = () => {
 			console.warn('Chart data could not be parsed:', error);
 			return;
 		}
+		const timeframe = container.dataset.timeframe || '1D';
+		const isIntraday = ['1m', '5m', '15m', '30m', '1h', '6h', '12h', '1D'].includes(timeframe);
+		const formatChartTime = (time) => {
+			const date = new Date(Number(time) * 1000);
+			return isIntraday
+				? date.toLocaleTimeString('nl-NL', { hour: '2-digit', minute: '2-digit' })
+				: date.toLocaleDateString('nl-NL', { day: '2-digit', month: 'short' });
+		};
 
 		const chart = createChart(container, {
 			layout: { background: { type: 'solid', color: '#ffffff' }, textColor: '#1f2937' },
 			grid: { vertLines: { color: '#f3f4f6' }, horzLines: { color: '#f3f4f6' } },
 			rightPriceScale: { borderColor: '#e5e7eb' },
-			timeScale: { borderColor: '#e5e7eb', timeVisible: true, secondsVisible: false },
+			localization: { timeFormatter: formatChartTime },
+			timeScale: {
+				borderColor: '#e5e7eb',
+				timeVisible: isIntraday,
+				secondsVisible: false,
+				tickMarkFormatter: formatChartTime,
+			},
 			width: container.clientWidth,
 			height: 500,
 		});

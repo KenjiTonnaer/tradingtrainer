@@ -14,14 +14,15 @@ class StockChart extends Component
 
     // Mapping voor Alpaca timeframes en terugkijk window
     protected array $timeframeMap = [
-        '1m' => ['tf' => '1Min', 'lookback' => ['days' => 1], 'limit' => 1000],
-        '5m' => ['tf' => '5Min', 'lookback' => ['days' => 5], 'limit' => 2000],
-        '15m' => ['tf' => '15Min', 'lookback' => ['days' => 10], 'limit' => 4000],
-        '30m' => ['tf' => '30Min', 'lookback' => ['days' => 20], 'limit' => 4000],
-        '1h' => ['tf' => '1Hour', 'lookback' => ['days' => 60], 'limit' => 2000],
-        // Voor 6h/12h gebruiken we 15Min bars met beperkt lookback
-        '6h' => ['tf' => '1Hour', 'lookback' => ['hours' => 24], 'limit' => 2000],
-        '12h' => ['tf' => '1Hour', 'lookback' => ['days' => 3], 'limit' => 2000],
+        // De knop is het zichtbare bereik; de candle-interval blijft zo fijn mogelijk.
+        '1m' => ['tf' => '1Min', 'lookback' => ['minutes' => 1], 'limit' => 1000],
+        '5m' => ['tf' => '1Min', 'lookback' => ['minutes' => 5], 'limit' => 1000],
+        '15m' => ['tf' => '1Min', 'lookback' => ['minutes' => 15], 'limit' => 1000],
+        '30m' => ['tf' => '1Min', 'lookback' => ['minutes' => 30], 'limit' => 1000],
+        '1h' => ['tf' => '5Min', 'lookback' => ['hours' => 1], 'limit' => 1000],
+        // Alpaca ondersteunt geen 6h/12h-bars; gebruik fijnere intraday-bars.
+        '6h' => ['tf' => '15Min', 'lookback' => ['hours' => 6], 'limit' => 1000],
+        '12h' => ['tf' => '30Min', 'lookback' => ['hours' => 12], 'limit' => 1000],
         // Dagelijkse tijdvakken
         '1D' => ['tf' => '1Hour', 'lookback' => ['days' => 1], 'limit' => 2000],
         '30D' => ['tf' => '1Day', 'lookback' => ['days' => 30], 'limit' => 2000],
@@ -113,13 +114,13 @@ class StockChart extends Component
     {
         // Bepaal aantal candles op basis van timeframe
         $candleCount = match($this->timeframe) {
-            '1m' => 390, // ~6.5 uur
-            '5m' => 390,
-            '15m' => 200,
-            '30m' => 200,
-            '1h' => 180,
+            '1m' => 1,
+            '5m' => 5,
+            '15m' => 15,
+            '30m' => 30,
+            '1h' => 12,
             '6h' => 24,
-            '12h' => 72,
+            '12h' => 24,
             '1D' => 24,
             '30D' => 30,
             '6M' => 180,
@@ -136,12 +137,10 @@ class StockChart extends Component
         for ($i = $candleCount; $i >= 0; $i--) {
             $time = match($this->timeframe) {
                 '1m' => $now->copy()->subMinutes($i)->timestamp,
-                '5m' => $now->copy()->subMinutes($i * 5)->timestamp,
-                '15m' => $now->copy()->subMinutes($i * 15)->timestamp,
-                '30m' => $now->copy()->subMinutes($i * 30)->timestamp,
-                '1h' => $now->copy()->subHours($i)->timestamp,
-                '6h' => $now->copy()->subHours($i * 6)->timestamp,
-                '12h' => $now->copy()->subHours($i * 12)->timestamp,
+                '5m', '15m', '30m' => $now->copy()->subMinutes($i)->timestamp,
+                '1h' => $now->copy()->subMinutes($i * 5)->timestamp,
+                '6h' => $now->copy()->subMinutes($i * 15)->timestamp,
+                '12h' => $now->copy()->subMinutes($i * 30)->timestamp,
                 '1D' => $now->copy()->subDays($i)->timestamp,
                 '30D' => $now->copy()->subMonths($i)->timestamp,
                 '6M' => $now->copy()->subMonths($i * 6)->timestamp,
@@ -292,13 +291,13 @@ class StockChart extends Component
         }
 
         $config = match($this->timeframe) {
-            '1m' => ['interval' => '1m', 'limit' => 1000],
-            '5m' => ['interval' => '5m', 'limit' => 1000],
-            '15m' => ['interval' => '15m', 'limit' => 1000],
-            '30m' => ['interval' => '30m', 'limit' => 1000],
-            '1h' => ['interval' => '1h', 'limit' => 1000],
-            '6h' => ['interval' => '1h', 'limit' => 24],
-            '12h' => ['interval' => '1h', 'limit' => 72],
+            '1m' => ['interval' => '1m', 'limit' => 1],
+            '5m' => ['interval' => '1m', 'limit' => 5],
+            '15m' => ['interval' => '1m', 'limit' => 15],
+            '30m' => ['interval' => '1m', 'limit' => 30],
+            '1h' => ['interval' => '5m', 'limit' => 12],
+            '6h' => ['interval' => '15m', 'limit' => 24],
+            '12h' => ['interval' => '30m', 'limit' => 24],
             '1D' => ['interval' => '1h', 'limit' => 24],
             '30D' => ['interval' => '1d', 'limit' => 30],
             '6M' => ['interval' => '1d', 'limit' => 180],
