@@ -19,6 +19,11 @@
                 @php
                     $cryptoSymbols = ['BTC', 'ETH', 'SOL', 'DOGE', 'XRP', 'ADA', 'LINK', 'DOT', 'MATIC', 'LTC', 'AVAX'];
                     $isCrypto = in_array($symbol, $cryptoSymbols);
+                    $currentPrice = (float) ($currentQuote['c'] ?? 0);
+                    $previousClose = (float) ($currentQuote['pc'] ?? 0);
+                    $hasCurrentPrice = $currentPrice > 0;
+                    $hasPreviousClose = $previousClose > 0;
+                    $hasDailyChange = $hasCurrentPrice && isset($currentQuote['dp']);
                 @endphp
 
                 @if($isCrypto)
@@ -57,10 +62,16 @@
                 <div>
                     <h2 class="text-3xl font-bold text-gray-900">{{ $symbol }}</h2>
                     <div class="flex items-baseline gap-3 mt-1">
-                        <span class="text-3xl font-bold text-gray-900">${{ number_format($currentQuote['c'] ?? 0, 2) }}</span>
-                        <span class="text-lg font-semibold {{ ($currentQuote['dp'] ?? 0) >= 0 ? 'text-green-600' : 'text-red-600' }}">
-                            {{ ($currentQuote['dp'] ?? 0) >= 0 ? '▲' : '▼' }}
-                            {{ number_format(abs($currentQuote['dp'] ?? 0), 2) }}%
+                        <span class="text-3xl font-bold text-gray-900">
+                            {{ $hasCurrentPrice ? '$' . number_format($currentPrice, 2) : '-' }}
+                        </span>
+                        <span class="text-lg font-semibold {{ !$hasDailyChange ? 'text-gray-500' : (($currentQuote['dp'] ?? 0) >= 0 ? 'text-green-600' : 'text-red-600') }}">
+                            @if($hasDailyChange)
+                                {{ ($currentQuote['dp'] ?? 0) >= 0 ? '▲' : '▼' }}
+                                {{ number_format(abs($currentQuote['dp'] ?? 0), 2) }}%
+                            @else
+                                -
+                            @endif
                         </span>
                     </div>
                 </div>
@@ -122,7 +133,9 @@
             <div class="flex items-center justify-between">
                 <div>
                     <p class="text-xs font-medium text-gray-600 mb-1">Current Price</p>
-                    <h3 class="text-xl font-bold text-gray-900">${{ number_format($currentQuote['c'] ?? 0, 2) }}</h3>
+                    <h3 class="text-xl font-bold text-gray-900">
+                        {{ $hasCurrentPrice ? '$' . number_format($currentPrice, 2) : '-' }}
+                    </h3>
                 </div>
                 <div class="w-10 h-10 bg-gradient-to-br from-purple-500 to-pink-500 rounded-lg flex items-center justify-center">
                     <svg class="w-5 h-5 text-white" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
@@ -137,8 +150,8 @@
             <div class="flex items-center justify-between">
                 <div>
                     <p class="text-xs font-medium text-gray-600 mb-1">Daily Change</p>
-                    <h3 class="text-xl font-bold {{ ($currentQuote['dp'] ?? 0) >= 0 ? 'text-green-600' : 'text-red-600' }}">
-                        {{ number_format(abs($currentQuote['dp'] ?? 0), 2) }}%
+                    <h3 class="text-xl font-bold {{ !$hasDailyChange ? 'text-gray-500' : (($currentQuote['dp'] ?? 0) >= 0 ? 'text-green-600' : 'text-red-600') }}">
+                        {{ $hasDailyChange ? number_format(abs($currentQuote['dp']), 2) . '%' : '-' }}
                     </h3>
                 </div>
                 <div class="w-10 h-10 bg-gradient-to-br from-green-500 to-emerald-500 rounded-lg flex items-center justify-center">
@@ -153,7 +166,9 @@
             <div class="flex items-center justify-between">
                 <div>
                     <p class="text-xs font-medium text-gray-600 mb-1">Previous Close</p>
-                    <h3 class="text-xl font-bold text-gray-900">${{ number_format($currentQuote['pc'] ?? 0, 2) }}</h3>
+                    <h3 class="text-xl font-bold text-gray-900">
+                        {{ $hasPreviousClose ? '$' . number_format($previousClose, 2) : '-' }}
+                    </h3>
                 </div>
                 <div class="w-10 h-10 bg-gradient-to-br from-orange-500 to-yellow-500 rounded-lg flex items-center justify-center">
                     <svg class="w-5 h-5 text-white" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
@@ -214,7 +229,7 @@
         @auth
         <div
             class="xl:w-80 w-full"
-            x-data="tradePanel('{{ $symbol }}', {{ $currentQuote['c'] ?? 0 }})"
+            x-data="tradePanel('{{ $symbol }}', {{ $currentPrice }})"
             x-init="init()"
         >
             <div class="bg-slate-50 rounded-2xl shadow-[0_18px_32px_-22px_rgba(15,23,42,0.55)] border border-slate-200 overflow-hidden sticky top-4">
@@ -223,7 +238,7 @@
                 <div class="bg-gradient-to-r from-purple-600 to-pink-500 px-6 py-4">
                     <p class="text-white text-xs font-semibold uppercase tracking-wider mb-1">Paper Trading</p>
                     <div class="flex items-baseline gap-2">
-                        <span class="text-white text-2xl font-bold" x-text="'$' + price.toFixed(2)"></span>
+                        <span class="text-white text-2xl font-bold" x-text="price > 0 ? '$' + price.toFixed(2) : '-'"></span>
                         <span class="text-purple-200 text-sm" x-text="symbol"></span>
                     </div>
                 </div>
@@ -355,10 +370,10 @@
                     <div class="bg-gray-50 rounded-xl px-4 py-3 space-y-1">
                         <div class="flex justify-between text-sm">
                             <span class="text-gray-600">Subtotaal</span>
-                            <span class="font-semibold text-gray-900" x-text="'$' + total.toFixed(2)"></span>
+                            <span class="font-semibold text-gray-900" x-text="price > 0 ? '$' + total.toFixed(2) : '-'"></span>
                         </div>
                         <div class="flex justify-between text-xs text-gray-500">
-                            <span x-text="quantity + ' × $' + price.toFixed(2)"></span>
+                            <span x-text="quantity + ' × ' + (price > 0 ? '$' + price.toFixed(2) : '-')"></span>
                         </div>
                     </div>
 
@@ -665,7 +680,7 @@
                 
                 fetch(`/markets/${this.symbol}/bars/latest`, {
                     headers: { 'Accept': 'application/json', 'X-Requested-With': 'XMLHttpRequest' }
-                }).then(r =? r.ok ? r.json() : null)
+                }).then(r => r.ok ? r.json() : null)
                   .then(data => {
                       const price = parseFloat(data?.price ?? data?.c ?? 0);
                       if (price > 0) {
