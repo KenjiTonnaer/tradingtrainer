@@ -98,6 +98,181 @@ const initializeStockCharts = () => {
 	});
 };
 
+const registerTradingComponents = () => {
+	if (!window.Alpine) return;
+
+	window.Alpine.data('tradePanel', (symbol, initialPrice) => ({
+		symbol,
+		side: 'buy',
+		quantity: 1,
+		price: parseFloat(initialPrice) || 0,
+		livePrice: parseFloat(initialPrice) || 0,
+		walletBalance: 0,
+		message: '',
+		isError: false,
+		loading: false,
+		inputMode: 'quantity',
+		amountInput: '',
+
+		get total() {
+			return (parseFloat(this.quantity) || 0) * (parseFloat(this.price) || 0);
+		},
+
+		init() {
+			this.fetchWallet();
+			this.loadLatestPrice();
+			window.addEventListener('live-price-update', (event) => {
+				if (event.detail.symbol !== this.symbol) return;
+				this.livePrice = event.detail.price;
+				if (Math.abs(this.price - this.livePrice) < 0.01 || this.price === 0) {
+					this.price = this.livePrice;
+				}
+			});
+		},
+
+		async loadLatestPrice() {
+			try {
+				const response = await fetch(`/markets/${this.symbol}/bars/latest`, {
+					headers: { Accept: 'application/json', 'X-Requested-With': 'XMLHttpRequest' },
+				});
+				if (!response.ok) return;
+				const data = await response.json();
+				const latestPrice = parseFloat(data.price ?? data.c ?? data.close ?? 0);
+				if (latestPrice > 0) {
+					this.livePrice = latestPrice;
+					this.price = latestPrice;
+				}
+			} catch (error) {
+				console.warn('Initial live price fetch failed:', error);
+			}
+		},
+
+		increment() {
+			const step = this.isCrypto() ? 0.001 : 1;
+			const decimals = this.isCrypto() ? 6 : 0;
+			this.quantity = parseFloat(((parseFloat(this.quantity) || 0) + step).toFixed(decimals));
+		},
+
+		decrement() {
+			const current = parseFloat(this.quantity) || 1;
+			this.quantity = Math.max(this.isCrypto() ? 0.000001 : 1, current - 1);
+		},
+
+		isCrypto() {
+			return ['BTC', 'ETH', 'SOL', 'DOGE', 'XRP', 'ADA', 'LINK', 'DOT', 'MATIC', 'LTC', 'AVAX']
+				.includes(this.symbol.toUpperCase());
+		},
+
+		fetchWallet() {
+			const element = document.querySelector('[data-wallet-balance]');
+			if (element) this.walletBalance = parseFloat(element.dataset.walletBalance) || 0;
+		},
+
+		setByPercent(percent) {
+			if (this.price <= 0 || this.walletBalance <= 0) return;
+			const rawQuantity = (this.walletBalance * (percent / 100)) / this.price;
+			this.quantity = this.isCrypto() ? parseFloat(rawQuantity.toFixed(6)) : Math.floor(rawQuantity);
+			this.amountInput = (this.quantity * this.price).toFixed(2);
+		},
+
+		async submitOrder() {
+			if (this.loading || this.quantity <= 0 || this.price <= 0) return;
+			this.loading = true;
+			this.message = '';
+			const endpoint = this.side === 'buy' ? '/trades/buy' : '/trades/sell';
+			try {
+				const response = await fetch(endpoint, {
+					method: 'POST',
+					headers: {
+						'Content-Type': 'application/json',
+						Accept: 'application/json',
+						'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]')?.content ?? '',
+						'X-Requested-With': 'XMLHttpRequest',
+					},
+					body: JSON.stringify({
+						symbol: this.symbol,
+						quantity: this.quantity,
+						price: this.price,
+						asset_type: this.isCrypto() ? 'crypto' : 'stock',
+					}),
+				});
+				const data = await response.json();
+				this.message = data.message ?? (response.ok ? 'Order uitgevoerd.' : 'Er ging iets mis.');
+				this.isError = !response.ok || !data.success;
+				if (!this.isError) {
+					this.quantity = 1;
+					this.price = this.livePrice;
+					if (data.wallet_balance !== undefined) this.walletBalance = parseFloat(data.wallet_balance);
+					window.dispatchEvent(new CustomEvent('trade-executed'));
+				}
+			} catch (error) {
+				this.message = `Netwerkfout: ${error.message}`;
+				this.isError = true;
+			} finally {
+				this.loading = false;
+				setTimeout(() => { this.message = ''; }, 5000);
+			}
+		},
+	}));
+
+	window.Alpine.data('portfolio', () => ({
+		positions: [],
+		livePrices: {},
+		loading: false,
+		pollTimer: null,
+
+		init() {
+			this.load();
+			this.pollTimer = setInterval(() => this.fetchLivePrices(), 15000);
+			window.addEventListener('trade-executed', () => this.load());
+			window.addEventListener('live-price-update', (event) => {
+				if (event.detail.price > 0) this.livePrices[event.detail.symbol] = event.detail.price;
+			});
+		},
+
+		destroy() {
+			if (this.pollTimer) clearInterval(this.pollTimer);
+		},
+
+		async load() {
+			this.loading = true;
+			try {
+				const response = await fetch('/portfolio', {
+					headers: { Accept: 'application/json', 'X-Requested-With': 'XMLHttpRequest' },
+				});
+				if (response.ok) {
+					this.positions = await response.json();
+					await this.fetchLivePrices();
+				}
+			} catch (error) {
+				console.error('Portfolio load error:', error);
+			} finally {
+				this.loading = false;
+			}
+		},
+
+		async fetchLivePrices() {
+			for (const position of this.positions) {
+				try {
+					const response = await fetch(`/markets/${position.symbol}/bars/latest`, {
+						headers: { Accept: 'application/json', 'X-Requested-With': 'XMLHttpRequest' },
+					});
+					if (response.ok) {
+						const data = await response.json();
+						const price = parseFloat(data.price ?? data.c ?? data.close ?? 0);
+						if (price > 0) this.livePrices[position.symbol] = price;
+					}
+				} catch (error) {
+					console.warn('Live price failed for', position.symbol);
+				}
+			}
+		},
+	}));
+};
+
+document.addEventListener('alpine:init', registerTradingComponents);
+if (window.Alpine) registerTradingComponents();
+
 document.addEventListener('DOMContentLoaded', () => {
 	const el = document.getElementById('market-chart');
 	if (!el) return;
