@@ -132,9 +132,16 @@ const registerTradingComponents = () => {
 			});
 		},
 
+		setSide(side) {
+			this.side = side;
+			if (side === 'sell') this.setSellPercent(100);
+			if (side === 'buy' && this.quantity <= 0) this.quantity = 1;
+		},
+
 		get canSubmit() {
 			if (this.loading || this.quantity <= 0 || this.price <= 0) return false;
-			return this.side !== 'sell' || this.availableQuantity >= parseFloat(this.quantity);
+			if (this.side === 'sell') return this.availableQuantity >= parseFloat(this.quantity);
+			return this.total <= this.walletBalance;
 		},
 
 		async loadLatestPrice() {
@@ -163,9 +170,37 @@ const registerTradingComponents = () => {
 				const positions = await response.json();
 				const position = positions.find((item) => item.symbol === this.symbol);
 				this.availableQuantity = position ? parseFloat(position.quantity) || 0 : 0;
+				if (this.side === 'sell') this.setSellPercent(100);
 			} catch (error) {
 				console.warn('Available quantity failed:', error);
 			}
+		},
+
+		minimumQuantity() {
+			return this.isCrypto() ? 0.000001 : 1;
+		},
+
+		setSellQuantity(quantity) {
+			this.quantity = this.isCrypto() ? parseFloat(quantity.toFixed(6)) : quantity;
+		},
+
+		setBuyQuantity(quantity) {
+			this.quantity = this.isCrypto() ? parseFloat(quantity.toFixed(6)) : quantity;
+		},
+
+		setSellPercent(percent) {
+			if (this.availableQuantity <= 0) {
+				this.quantity = 0;
+				return;
+			}
+			if (percent === 100) {
+				this.quantity = this.availableQuantity;
+				return;
+			}
+			const amount = this.availableQuantity * (percent / 100);
+			this.quantity = this.isCrypto()
+				? parseFloat(Math.max(this.minimumQuantity(), amount).toFixed(6))
+				: Math.max(this.minimumQuantity(), Math.floor(amount));
 		},
 
 		increment() {

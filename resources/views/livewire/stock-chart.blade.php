@@ -257,7 +257,7 @@
                     <!-- Buy / Sell toggle -->
                     <div class="flex rounded-xl overflow-hidden border border-gray-200">
                         <button
-                            @click="side = 'buy'"
+                            @click="setSide('buy')"
                             :class="side === 'buy'
                                 ? 'trade-side-active border-b-2 border-emerald-500'
                                 : 'trade-side-idle border-b-2 border-transparent hover:bg-slate-50'"
@@ -266,7 +266,7 @@
                             ▲ Kopen
                         </button>
                         <button
-                            @click="side = 'sell'"
+                            @click="setSide('sell')"
                             :class="side === 'sell'
                                 ? 'trade-side-active border-b-2 border-rose-500'
                                 : 'trade-side-idle border-b-2 border-transparent hover:bg-slate-50'"
@@ -321,6 +321,48 @@
                         >
                             Je kunt maximaal <span x-text="availableQuantity"></span> {{ $symbol }} verkopen.
                         </p>
+                        <div x-show="side === 'sell'" class="mt-3 flex flex-wrap gap-2">
+                            <button
+                                type="button"
+                                @click="quantity = minimumQuantity()"
+                                class="border border-slate-200 bg-white px-3 py-1.5 text-xs font-semibold text-slate-600 transition hover:border-slate-300 hover:text-slate-900"
+                            >Min</button>
+                            <button
+                                type="button"
+                                @click="setSellQuantity(1)"
+                                class="border border-slate-200 bg-white px-3 py-1.5 text-xs font-semibold text-slate-600 transition hover:border-slate-300 hover:text-slate-900"
+                            >1</button>
+                            <button
+                                type="button"
+                                @click="setSellQuantity(5)"
+                                class="border border-slate-200 bg-white px-3 py-1.5 text-xs font-semibold text-slate-600 transition hover:border-slate-300 hover:text-slate-900"
+                            >5</button>
+                            <button
+                                type="button"
+                                @click="setSellQuantity(10)"
+                                class="border border-slate-200 bg-white px-3 py-1.5 text-xs font-semibold text-slate-600 transition hover:border-slate-300 hover:text-slate-900"
+                            >10</button>
+                            <button
+                                type="button"
+                                @click="setSellPercent(25)"
+                                class="border border-slate-200 bg-white px-3 py-1.5 text-xs font-semibold text-slate-600 transition hover:border-slate-300 hover:text-slate-900"
+                            >25%</button>
+                            <button
+                                type="button"
+                                @click="setSellPercent(50)"
+                                class="border border-slate-200 bg-white px-3 py-1.5 text-xs font-semibold text-slate-600 transition hover:border-slate-300 hover:text-slate-900"
+                            >50%</button>
+                            <button
+                                type="button"
+                                @click="setSellPercent(75)"
+                                class="border border-slate-200 bg-white px-3 py-1.5 text-xs font-semibold text-slate-600 transition hover:border-slate-300 hover:text-slate-900"
+                            >75%</button>
+                            <button
+                                type="button"
+                                @click="setSellPercent(100)"
+                                class="border border-rose-200 bg-white px-3 py-1.5 text-xs font-semibold text-rose-700 transition hover:border-rose-300"
+                            >Max</button>
+                        </div>
                     </div>
 
                     <!-- Amount input (dollars/euros) -->
@@ -361,16 +403,40 @@
                         />
                     </div>
 
-                    <!-- Snelkeuze % van wallet (alleen bij kopen) -->
-                    <div x-show="side === 'buy'" class="flex gap-2">
+                    <!-- Snelkeuze voor kopen: aantallen en budgetpercentages -->
+                    <div x-show="side === 'buy'" class="flex flex-wrap gap-2">
+                        <button
+                            type="button"
+                            @click="setBuyQuantity(minimumQuantity())"
+                            class="border border-slate-200 bg-white px-3 py-1.5 text-xs font-semibold text-slate-600 transition hover:border-slate-300 hover:text-slate-900"
+                        >Min</button>
+                        <button
+                            type="button"
+                            @click="setBuyQuantity(1)"
+                            class="border border-slate-200 bg-white px-3 py-1.5 text-xs font-semibold text-slate-600 transition hover:border-slate-300 hover:text-slate-900"
+                        >1</button>
+                        <button
+                            type="button"
+                            @click="setBuyQuantity(5)"
+                            class="border border-slate-200 bg-white px-3 py-1.5 text-xs font-semibold text-slate-600 transition hover:border-slate-300 hover:text-slate-900"
+                        >5</button>
+                        <button
+                            type="button"
+                            @click="setBuyQuantity(10)"
+                            class="border border-slate-200 bg-white px-3 py-1.5 text-xs font-semibold text-slate-600 transition hover:border-slate-300 hover:text-slate-900"
+                        >10</button>
                         <template x-for="pct in [25, 50, 75, 100]" :key="pct">
                             <button
                                 @click="setByPercent(pct)"
-                                class="flex-1 py-1.5 text-xs font-bold bg-purple-50 hover:bg-purple-100 text-purple-700 rounded-lg transition"
+                                class="border border-teal-200 bg-white px-3 py-1.5 text-xs font-semibold text-teal-700 transition hover:border-teal-300"
                                 x-text="pct + '%'"
                             ></button>
                         </template>
                     </div>
+                    <p
+                        x-show="side === 'buy' && total > walletBalance"
+                        class="text-xs font-medium text-rose-700"
+                    >Onvoldoende saldo voor deze order.</p>
 
                     <!-- Totaal -->
                     <div class="bg-gray-50 rounded-xl px-4 py-3 space-y-1">
