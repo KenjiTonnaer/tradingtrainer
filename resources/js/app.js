@@ -107,6 +107,7 @@ const registerTradingComponents = () => {
 		quantity: 1,
 		price: parseFloat(initialPrice) || 0,
 		livePrice: parseFloat(initialPrice) || 0,
+		availableQuantity: 0,
 		walletBalance: 0,
 		message: '',
 		isError: false,
@@ -121,6 +122,7 @@ const registerTradingComponents = () => {
 		init() {
 			this.fetchWallet();
 			this.loadLatestPrice();
+			this.loadAvailableQuantity();
 			window.addEventListener('live-price-update', (event) => {
 				if (event.detail.symbol !== this.symbol) return;
 				this.livePrice = event.detail.price;
@@ -128,6 +130,11 @@ const registerTradingComponents = () => {
 					this.price = this.livePrice;
 				}
 			});
+		},
+
+		get canSubmit() {
+			if (this.loading || this.quantity <= 0 || this.price <= 0) return false;
+			return this.side !== 'sell' || this.availableQuantity >= parseFloat(this.quantity);
 		},
 
 		async loadLatestPrice() {
@@ -144,6 +151,20 @@ const registerTradingComponents = () => {
 				}
 			} catch (error) {
 				console.warn('Initial live price fetch failed:', error);
+			}
+		},
+
+		async loadAvailableQuantity() {
+			try {
+				const response = await fetch('/portfolio', {
+					headers: { Accept: 'application/json', 'X-Requested-With': 'XMLHttpRequest' },
+				});
+				if (!response.ok) return;
+				const positions = await response.json();
+				const position = positions.find((item) => item.symbol === this.symbol);
+				this.availableQuantity = position ? parseFloat(position.quantity) || 0 : 0;
+			} catch (error) {
+				console.warn('Available quantity failed:', error);
 			}
 		},
 
@@ -176,7 +197,7 @@ const registerTradingComponents = () => {
 		},
 
 		async submitOrder() {
-			if (this.loading || this.quantity <= 0 || this.price <= 0) return;
+			if (!this.canSubmit) return;
 			this.loading = true;
 			this.message = '';
 			const endpoint = this.side === 'buy' ? '/trades/buy' : '/trades/sell';
@@ -204,6 +225,7 @@ const registerTradingComponents = () => {
 					this.price = this.livePrice;
 					if (data.wallet_balance !== undefined) this.walletBalance = parseFloat(data.wallet_balance);
 					window.dispatchEvent(new CustomEvent('trade-executed'));
+					this.loadAvailableQuantity();
 				}
 			} catch (error) {
 				this.message = `Netwerkfout: ${error.message}`;

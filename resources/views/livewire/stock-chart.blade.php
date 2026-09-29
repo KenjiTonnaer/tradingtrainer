@@ -259,18 +259,18 @@
                         <button
                             @click="side = 'buy'"
                             :class="side === 'buy'
-                                ? 'bg-green-500 text-white shadow-inner'
-                                : 'bg-white text-gray-600 hover:bg-green-50'"
-                            class="flex-1 py-3 text-sm font-bold transition-all duration-200"
+                                ? 'trade-side-active border-b-2 border-emerald-500'
+                                : 'trade-side-idle border-b-2 border-transparent hover:bg-slate-50'"
+                            class="trade-side-buy flex-1 bg-white py-2.5 text-sm font-semibold transition-colors duration-200"
                         >
                             ▲ Kopen
                         </button>
                         <button
                             @click="side = 'sell'"
                             :class="side === 'sell'
-                                ? 'bg-red-500 text-white shadow-inner'
-                                : 'bg-white text-gray-600 hover:bg-red-50'"
-                            class="flex-1 py-3 text-sm font-bold transition-all duration-200"
+                                ? 'trade-side-active border-b-2 border-rose-500'
+                                : 'trade-side-idle border-b-2 border-transparent hover:bg-slate-50'"
+                            class="trade-side-sell flex-1 bg-white py-2.5 text-sm font-semibold transition-colors duration-200"
                         >
                             ▼ Verkopen
                         </button>
@@ -315,6 +315,12 @@
                                 class="w-9 h-9 flex items-center justify-center bg-gray-100 hover:bg-gray-200 rounded-lg font-bold text-gray-700 transition"
                             >+</button>
                         </div>
+                        <p
+                            x-show="side === 'sell' && quantity > availableQuantity"
+                            class="mt-2 text-xs font-medium text-rose-700"
+                        >
+                            Je kunt maximaal <span x-text="availableQuantity"></span> {{ $symbol }} verkopen.
+                        </p>
                     </div>
 
                     <!-- Amount input (dollars/euros) -->
@@ -389,7 +395,7 @@
                     <!-- Submit knop -->
                     <button
                         @click="submitOrder()"
-                        :disabled="loading || quantity <= 0 || price <= 0"
+                        :disabled="!canSubmit"
                         :class="side === 'buy'
                             ? 'bg-green-500 hover:bg-green-600 disabled:bg-green-200'
                             : 'bg-red-500 hover:bg-red-600 disabled:bg-red-200'"

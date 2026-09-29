@@ -92,6 +92,71 @@ select:focus[data-flux-control] {
 }
 
 @layer utilities {
+    .trade-side-buy {
+        color: #047857 !important;
+    }
+
+    .trade-side-sell {
+        color: #be123c !important;
+    }
+
+    .trade-side-active {
+        background-color: #f8fafc !important;
+        font-weight: 700;
+    }
+
+    .trade-side-idle {
+        background-color: #ffffff !important;
+        opacity: 0.68;
+    }
+
+    .rounded-3xl {
+        border-radius: 0.875rem !important;
+    }
+
+    .rounded-2xl {
+        border-radius: 0.75rem !important;
+    }
+
+    .rounded-xl {
+        border-radius: 0.625rem !important;
+    }
+
+    button,
+    [role='button'] {
+        border-radius: 0.5rem;
+    }
+
+    a.rounded-full,
+    button.rounded-full,
+    .inline-flex.rounded-full {
+        border-radius: 0.5rem !important;
+    }
+
+    .hover\:scale-105:hover,
+    .hover\:scale-110:hover {
+        transform: translateY(-1px) !important;
+    }
+
+    .bg-purple-600,
+    .bg-violet-600 {
+        background-color: #0f766e !important;
+    }
+
+    .hover\:bg-purple-700:hover,
+    .hover\:bg-violet-700:hover {
+        background-color: #115e59 !important;
+    }
+
+    .border-purple-300 {
+        border-color: #5eead4 !important;
+    }
+
+    .text-purple-500,
+    .text-violet-500 {
+        color: #0f766e !important;
+    }
+
     .from-purple-600.via-pink-500.to-orange-500,
     .from-slate-950.via-violet-950.to-fuchsia-700 {
         background-image: linear-gradient(135deg, #0f172a 0%, #123342 56%, #0f766e 100%) !important;
