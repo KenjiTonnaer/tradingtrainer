@@ -635,7 +635,7 @@
                 });
                 if (!res.ok) return;
                 const data = await res.json();
-                const price = parseFloat(data.price ?? data.c ?? 0);
+                const price = parseFloat(data.price ?? data.c ?? data.close ?? 0);
                 if (price > 0 && price !== lastKnownPrice) {
                     lastKnownPrice = price;
                     const ts = Math.floor(Date.now() / 1000);
@@ -682,7 +682,7 @@
                     headers: { 'Accept': 'application/json', 'X-Requested-With': 'XMLHttpRequest' }
                 }).then(r => r.ok ? r.json() : null)
                   .then(data => {
-                      const price = parseFloat(data?.price ?? data?.c ?? 0);
+                      const price = parseFloat(data?.price ?? data?.c ?? data?.close ?? 0);
                       if (price > 0) {
                           this.livePrice = price;
                           this.price = price;

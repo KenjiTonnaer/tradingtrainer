@@ -131,47 +131,46 @@ class MarketDataController extends Controller
 
     private function cryptoLatestBar(string $symbol, string $timeframe): JsonResponse
     {
-        $id = $this->cryptoIdFromSymbol($symbol);
-        if (!$id) {
+        $pair = $this->cryptoPairFromSymbol($symbol);
+        if (!$pair) {
             return response()->json(['error' => 'Unknown crypto symbol'], 400);
         }
 
         try {
-            $resp = Http::timeout(10)->get('https://api.coingecko.com/api/v3/coins/' . $id . '/market_chart', [
-                'vs_currency' => 'usd',
-                'days' => 1,
-                'interval' => 'minute',
+            $resp = Http::timeout(10)->get('https://api.binance.com/api/v3/ticker/24hr', [
+                'symbol' => $pair,
             ]);
 
             if ($resp->successful()) {
-                $prices = $resp->json('prices') ?? [];
-                $volumes = $resp->json('total_volumes') ?? [];
-                if (!empty($prices)) {
-                    $last = end($prices);
-                    $tsMs = $last[0] ?? null;
-                    $price = (float)($last[1] ?? 0);
-                    $vol = 0;
-                    if (!empty($volumes)) {
-                        $vlast = end($volumes);
-                        $vol = (float)($vlast[1] ?? 0);
-                    }
+                $price = (float)($resp->json('lastPrice') ?? 0);
+                if ($price > 0) {
                     return response()->json([
-                        'time' => $tsMs ? intval($tsMs / 1000) : null,
+                        'time' => time(),
+                        'price' => $price,
                         'open' => $price,
                         'high' => $price,
                         'low' => $price,
                         'close' => $price,
-                        'volume' => $vol,
+                        'volume' => (float)($resp->json('volume') ?? 0),
                     ]);
                 }
             } else {
-                Log::warning('CoinGecko latestBar error: ' . $resp->status() . ' ' . $resp->body());
+                Log::warning('Binance latestBar error: ' . $resp->status() . ' ' . $resp->body());
             }
         } catch (\Exception $e) {
-            Log::error('CoinGecko latestBar exception: ' . $e->getMessage());
+            Log::error('Binance latestBar exception: ' . $e->getMessage());
         }
 
         return response()->json(['error' => 'No data'], 204);
+    }
+
+    private function cryptoPairFromSymbol(string $symbol): ?string
+    {
+        $base = strtoupper($symbol);
+        $base = preg_replace('/[^A-Z]/', '', $base);
+        $base = preg_replace('/(USD|USDT)$/', '', $base);
+
+        return $this->isCryptoSymbol($base) ? $base . 'USDT' : null;
     }
 
     private function getSimulatedBar(): array

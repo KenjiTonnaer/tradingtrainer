@@ -231,23 +231,21 @@ class StockChart extends Component
 
     protected function getCryptoCurrentPrice(): array
     {
-        $id = $this->cryptoIdFromSymbol($this->symbol);
-        if (!$id) {
+        $pair = $this->cryptoPairFromSymbol($this->symbol);
+        if (!$pair) {
             return ['c' => 0.0, 'dp' => 0.0, 'pc' => 0.0];
         }
 
         try {
-            $resp = Http::timeout(10)->get('https://api.coingecko.com/api/v3/simple/price', [
-                'ids' => $id,
-                'vs_currencies' => 'usd',
-                'include_24hr_change' => 'true',
+            $resp = Http::timeout(10)->get('https://api.binance.com/api/v3/ticker/24hr', [
+                'symbol' => $pair,
             ]);
 
             if ($resp->successful()) {
-                $data = $resp->json($id);
-                $current = (float)($data['usd'] ?? 0);
-                $change24h = (float)($data['usd_24h_change'] ?? 0);
-                $previousClose = $current / (1 + ($change24h / 100));
+                $data = $resp->json();
+                $current = (float)($data['lastPrice'] ?? 0);
+                $change24h = (float)($data['priceChangePercent'] ?? 0);
+                $previousClose = (float)($data['prevClosePrice'] ?? 0);
 
                 return [
                     'c' => $current,
@@ -288,48 +286,45 @@ class StockChart extends Component
 
     protected function getCryptoHistoricalData(): array
     {
-        $id = $this->cryptoIdFromSymbol($this->symbol);
-        if (!$id) {
+        $pair = $this->cryptoPairFromSymbol($this->symbol);
+        if (!$pair) {
             return $this->getSimulatedData();
         }
 
-        // Map UI timeframe to days parameter
-        $days = match($this->timeframe) {
-            '1m', '5m', '15m', '30m' => 1,
-            '1h', '6h', '12h' => 7,
-            '1D' => 30,
-            '30D' => 90,
-            '6M' => 180,
-            '1Y' => 365,
-            'ALL' => 'max',
-            default => 30,
+        $config = match($this->timeframe) {
+            '1m' => ['interval' => '1m', 'limit' => 1000],
+            '5m' => ['interval' => '5m', 'limit' => 1000],
+            '15m' => ['interval' => '15m', 'limit' => 1000],
+            '30m' => ['interval' => '30m', 'limit' => 1000],
+            '1h' => ['interval' => '1h', 'limit' => 1000],
+            '6h' => ['interval' => '6h', 'limit' => 1000],
+            '12h' => ['interval' => '12h', 'limit' => 1000],
+            '1D' => ['interval' => '1d', 'limit' => 365],
+            '30D' => ['interval' => '1d', 'limit' => 900],
+            '6M' => ['interval' => '1d', 'limit' => 1000],
+            '1Y', 'ALL' => ['interval' => '1d', 'limit' => 1000],
+            default => ['interval' => '1d', 'limit' => 365],
         };
 
         try {
-            $resp = Http::timeout(15)->get('https://api.coingecko.com/api/v3/coins/' . $id . '/market_chart', [
-                'vs_currency' => 'usd',
-                'days' => $days,
-                'interval' => $days === 1 ? 'minute' : ($days <= 7 ? 'hourly' : 'daily'),
+            $resp = Http::timeout(15)->get('https://api.binance.com/api/v3/klines', [
+                'symbol' => $pair,
+                'interval' => $config['interval'],
+                'limit' => $config['limit'],
             ]);
 
             if ($resp->successful()) {
-                $prices = $resp->json('prices') ?? [];
-                $volumes = $resp->json('total_volumes') ?? [];
                 $candles = [];
 
-                foreach ($prices as $idx => $pricePoint) {
-                    $tsMs = $pricePoint[0] ?? null;
-                    $price = (float)($pricePoint[1] ?? 0);
-                    $vol = isset($volumes[$idx]) ? (float)($volumes[$idx][1] ?? 0) : 0;
-
-                    if ($tsMs && $price > 0) {
+                foreach ($resp->json() as $bar) {
+                    if (!empty($bar[0]) && (float)($bar[4] ?? 0) > 0) {
                         $candles[] = [
-                            'time' => intval($tsMs / 1000),
-                            'open' => $price,
-                            'high' => $price * 1.002,
-                            'low' => $price * 0.998,
-                            'close' => $price,
-                            'volume' => intval($vol),
+                            'time' => intval($bar[0] / 1000),
+                            'open' => (float) $bar[1],
+                            'high' => (float) $bar[2],
+                            'low' => (float) $bar[3],
+                            'close' => (float) $bar[4],
+                            'volume' => (int) $bar[5],
                         ];
                     }
                 }
@@ -338,13 +333,22 @@ class StockChart extends Component
                     return $candles;
                 }
             } else {
-                Log::warning('CoinGecko historical error: ' . $resp->status() . ' ' . $resp->body());
+                Log::warning('Binance historical error: ' . $resp->status() . ' ' . $resp->body());
             }
         } catch (\Exception $e) {
-            Log::error('CoinGecko API error: ' . $e->getMessage());
+            Log::error('Binance crypto API error: ' . $e->getMessage());
         }
 
         return $this->getSimulatedData();
+    }
+
+    protected function cryptoPairFromSymbol(string $symbol): ?string
+    {
+        $base = strtoupper($symbol);
+        $base = preg_replace('/[^A-Z]/', '', $base);
+        $base = preg_replace('/(USD|USDT)$/', '', $base);
+
+        return $this->isCryptoSymbol($base) ? $base . 'USDT' : null;
     }
 
     public function render()
