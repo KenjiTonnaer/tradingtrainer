@@ -5,35 +5,39 @@
         <style>
             /* Sidebar theming */
             .app-sidebar{
-                width:260px;
-                transition:width .2s ease,border-color .2s ease,background .2s ease,box-shadow .2s ease;
-                background:linear-gradient(180deg,#f8fafc 0%,#f4f7fb 35%,#eef2ff 100%);
+                width:272px;
+                transition:width .25s ease,border-color .2s ease,background .2s ease,box-shadow .2s ease;
+                background:linear-gradient(180deg,#0f172a 0%,#111827 58%,#0b1220 100%) !important;
                 overflow:hidden;
                 position:relative;
-                border:1px solid rgba(148,163,184,.38);
+                border:1px solid rgba(71,85,105,.6);
                 border-left:none;
-                border-top-right-radius:18px !important;
-                border-bottom-right-radius:18px !important;
-                box-shadow:6px 0 28px -16px rgba(124,58,237,.18),0 10px 28px -20px rgba(59,130,246,.18),0 2px 4px rgba(15,23,42,.04);
+                border-top-right-radius:20px !important;
+                border-bottom-right-radius:20px !important;
+                box-shadow:12px 0 32px -20px rgba(15,23,42,.7),0 12px 30px -20px rgba(20,184,166,.24);
             }
             .app-sidebar > *:first-child{overflow-x:hidden;overflow-y:auto;height:100%}
-            .app-sidebar .brand-gradient{background:linear-gradient(135deg,#7c3aed,#ec4899 60%,#f97316);width:40px;height:40px;border-radius:12px;box-shadow:0 10px 28px -12px rgba(124,58,237,.7)}
-            .app-sidebar .nav-item{border-radius:12px;padding:12px 14px;margin:2px 6px;color:#334155;display:flex;align-items:center;gap:14px;transition:all .18s ease}
+            .app-sidebar .brand-gradient{background:linear-gradient(135deg,#14b8a6,#0ea5e9);width:42px;height:42px;border-radius:13px;box-shadow:0 12px 26px -12px rgba(20,184,166,.85)}
+            .app-sidebar .nav-item{border-radius:11px;padding:11px 14px;margin:3px 8px;color:#cbd5e1;display:flex;align-items:center;gap:13px;transition:background .18s ease,border-color .18s ease,color .18s ease,transform .18s ease}
             .app-sidebar .nav-item svg{transition:transform .15s ease,color:inherit}
-            .app-sidebar .app-navlist .nav-item svg{width:40px;height:40px !important}
-            .app-sidebar .nav-item .label{font-size:0.96rem;font-weight:600;letter-spacing:-0.01em}
-            .app-sidebar .nav-item:hover{background:rgba(124,58,237,.08);transform:translateX(2px);color:#6d28d9}
+            .app-sidebar .app-navlist .nav-item svg{width:24px;height:24px !important;color:#94a3b8}
+            .app-sidebar .nav-item .label{font-size:0.92rem;font-weight:600;letter-spacing:.01em}
+            .app-sidebar .nav-item:hover{background:rgba(30,41,59,.85);transform:translateX(3px);color:#f8fafc}
             .app-sidebar .nav-item:hover svg{transform:scale(1.04)}
-            .app-sidebar .nav-item.active{background:linear-gradient(135deg,rgba(124,58,237,.14),rgba(236,72,153,.08));color:#6d28d9;border:1px solid rgba(168,85,247,.20);box-shadow:inset 0 1px 0 rgba(255,255,255,.35)}
-            .app-sidebar .icon-pill{width:40px;height:40px;border-radius:10px;display:flex;align-items:center;justify-content:center;background:linear-gradient(135deg,#7c3aed,#ec4899);box-shadow:0 10px 18px -12px rgba(124,58,237,.9)}
+            .app-sidebar .nav-item.active{background:linear-gradient(90deg,rgba(20,184,166,.2),rgba(14,165,233,.08));color:#5eead4;border:1px solid rgba(45,212,191,.28);box-shadow:inset 3px 0 0 #2dd4bf,0 10px 24px -18px rgba(20,184,166,.8)}
+            .app-sidebar .nav-item.active svg{color:#5eead4}
+            .app-sidebar .icon-pill{width:40px;height:40px;border-radius:11px;display:flex;align-items:center;justify-content:center;background:#1e293b;box-shadow:inset 0 0 0 1px rgba(148,163,184,.22),0 10px 18px -12px rgba(15,23,42,.9)}
             .app-sidebar .sidebar-header{row-gap:.5rem}
             .app-sidebar .toggle-row{display:flex;justify-content:flex-end;width:100%;padding-right:.5rem}
             body.sidebar-collapsed .app-sidebar .toggle-row{justify-content:flex-end;padding-right:.25rem}
             .desktop-user,.mobile-user{transition:transform .15s ease}
             .desktop-user:hover,.mobile-user:hover{transform:translateX(2px)}
             .app-sidebar .icon-pill svg{color:#fff}
+            .app-sidebar .group-heading{border-top:1px solid rgba(71,85,105,.35);padding-top:.75rem;margin-top:.75rem}
+            .app-sidebar .group-heading:first-child{border-top:0;padding-top:0;margin-top:0}
+            .app-sidebar [data-flux-profile]{color:#e2e8f0}
 
-            body.sidebar-collapsed .app-sidebar{width:72px}
+            body.sidebar-collapsed .app-sidebar{width:76px}
             body.sidebar-collapsed .app-sidebar{overflow-y:hidden}
             body.sidebar-collapsed .app-sidebar .label,
             body.sidebar-collapsed .app-sidebar .brand-text{display:none}
@@ -41,11 +45,11 @@
             body.sidebar-collapsed #sidebar-collapse-toggle{width:40px;height:40px}
             body.sidebar-collapsed .app-sidebar .compact-center{justify-content:center}
             body.sidebar-collapsed .app-sidebar .nav-item{justify-content:center;gap:0;padding:12px}
-            body.sidebar-collapsed .app-sidebar .app-navlist .nav-item svg{width:40px;height:40px !important}
+            body.sidebar-collapsed .app-sidebar .app-navlist .nav-item svg{width:24px;height:24px !important}
             body.sidebar-collapsed .app-sidebar .sidebar-header{justify-content:center}
 
             .app-sidebar::-webkit-scrollbar{width:8px}
-            .app-sidebar::-webkit-scrollbar-thumb{background:linear-gradient(180deg,#ddd6fe,#f9a8d4);border-radius:10px}
+            .app-sidebar::-webkit-scrollbar-thumb{background:linear-gradient(180deg,#2dd4bf,#0ea5e9);border-radius:10px}
             .app-sidebar::-webkit-scrollbar-track{background:transparent}
         </style>
     </head>
@@ -54,7 +58,7 @@
             <flux:sidebar.toggle class="lg:hidden" icon="x-mark" />
 
             <!-- Gradient right border (thicker, dark to light purple/pink, follows rounded corners) -->
-            <div aria-hidden="true" class="pointer-events-none absolute inset-y-0 right-0 w-[8px] rounded-r-2xl bg-gradient-to-b from-purple-600 via-fuchsia-400 to-pink-300 opacity-100"></div>
+            <div aria-hidden="true" class="pointer-events-none absolute inset-y-0 right-0 w-[8px] rounded-r-2xl bg-gradient-to-b from-teal-400 via-cyan-400 to-sky-500 opacity-100"></div>
 
             <div class="px-2 pt-2 pb-2 sidebar-header flex flex-col gap-2 w-full items-center">
                 <a href="{{ route('dashboard') }}" class="flex items-center justify-center space-x-2 rtl:space-x-reverse group" wire:navigate title="Dashboard">
@@ -64,10 +68,10 @@
                             <path d="M14 7h7v7"/>
                         </svg>
                     </div>
-                    <span class="text-lg font-bold bg-gradient-to-r from-purple-600 via-pink-500 to-orange-500 bg-clip-text text-transparent brand-text">TradingTrainer</span>
+                    <span class="text-lg font-bold bg-gradient-to-r from-teal-300 via-cyan-300 to-sky-400 bg-clip-text text-transparent brand-text">TradingTrainer</span>
                 </a>
                 <div class="toggle-row">
-                    <button id="sidebar-collapse-toggle" type="button" class="icon-pill shadow ring-1 ring-purple-200 hover:ring-purple-300 transition" title="Toggle sidebar">
+                    <button id="sidebar-collapse-toggle" type="button" class="icon-pill shadow ring-1 ring-teal-300/40 hover:ring-cyan-300/60 transition" title="Toggle sidebar">
                         <svg id="sidebar-collapse-icon" class="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
                             <path d="M15 18l-6-6 6-6"/>
                         </svg>

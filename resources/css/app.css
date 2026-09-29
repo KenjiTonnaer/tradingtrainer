@@ -23,14 +23,14 @@
     --color-zinc-900: #171717;
     --color-zinc-950: #0a0a0a;
 
-    --color-accent: #7c3aed;
+    --color-accent: #0f766e;
     --color-accent-content: #fff;
     --color-accent-foreground: #fff;
 }
 
 @layer theme {
     .dark {
-        --color-accent: #a78bfa;
+        --color-accent: #2dd4bf;
         --color-accent-content: #111827;
         --color-accent-foreground: #fff;
     }
@@ -45,9 +45,9 @@
     body {
         font-family: var(--font-sans);
         background:
-            radial-gradient(circle at top left, rgba(167, 139, 250, 0.14), transparent 28%),
-            radial-gradient(circle at bottom right, rgba(59, 130, 246, 0.08), transparent 24%),
-            linear-gradient(180deg, #edf2f7 0%, #f8fafc 12%, #f1f5f9 100%);
+            radial-gradient(circle at top left, rgba(20, 184, 166, 0.1), transparent 28%),
+            radial-gradient(circle at bottom right, rgba(14, 165, 233, 0.08), transparent 24%),
+            linear-gradient(180deg, #e8eef2 0%, #f8fafc 12%, #eef3f5 100%);
         color: #0f172a;
         text-rendering: optimizeLegibility;
         -webkit-font-smoothing: antialiased;
@@ -63,7 +63,7 @@
     }
 
     ::selection {
-        background: rgba(124, 58, 237, 0.18);
+        background: rgba(20, 184, 166, 0.2);
     }
 }
 
@@ -73,7 +73,7 @@
     }
 
     .soft-button {
-        @apply inline-flex items-center justify-center rounded-xl border border-slate-200 bg-white px-4 py-2.5 text-sm font-semibold text-slate-700 transition hover:-translate-y-0.5 hover:border-violet-200 hover:bg-violet-50 hover:text-violet-700;
+        @apply inline-flex items-center justify-center rounded-xl border border-slate-200 bg-white px-4 py-2.5 text-sm font-semibold text-slate-700 transition hover:-translate-y-0.5 hover:border-teal-200 hover:bg-teal-50 hover:text-teal-700;
     }
 }
 
@@ -88,5 +88,60 @@
 input:focus[data-flux-control],
 textarea:focus[data-flux-control],
 select:focus[data-flux-control] {
-    @apply outline-hidden ring-2 ring-violet-400 ring-offset-2 ring-offset-white;
+    @apply outline-hidden ring-2 ring-teal-400 ring-offset-2 ring-offset-white;
+}
+
+@layer utilities {
+    .from-purple-600.via-pink-500.to-orange-500,
+    .from-slate-950.via-violet-950.to-fuchsia-700 {
+        background-image: linear-gradient(135deg, #0f172a 0%, #123342 56%, #0f766e 100%) !important;
+    }
+
+    .from-purple-600.to-pink-500,
+    .from-violet-500.to-fuchsia-500,
+    .from-purple-500.to-pink-500,
+    .from-purple-500.to-orange-500,
+    .from-pink-500.to-violet-500 {
+        background-image: linear-gradient(135deg, #0f766e 0%, #0891b2 100%) !important;
+    }
+
+    .from-purple-50.to-pink-50,
+    .from-violet-50.to-pink-50,
+    .from-pink-50.to-purple-50,
+    .from-purple-50.to-orange-50,
+    .from-pink-50.to-yellow-50 {
+        background-image: linear-gradient(135deg, #ecfeff 0%, #f0fdfa 100%) !important;
+    }
+
+    .border-purple-200,
+    .border-violet-200 {
+        border-color: #99f6e4 !important;
+    }
+
+    .text-purple-600,
+    .text-violet-700,
+    .text-purple-700 {
+        color: #0f766e !important;
+    }
+
+    .hover\:text-pink-500:hover,
+    .hover\:text-purple-700:hover,
+    .hover\:text-violet-700:hover {
+        color: #0f766e !important;
+    }
+
+    .bg-purple-50,
+    .bg-violet-50 {
+        background-color: #ecfeff !important;
+    }
+
+    .text-purple-100,
+    .text-violet-100 {
+        color: #ccfbf1 !important;
+    }
+
+    .ring-purple-200,
+    .ring-purple-300 {
+        --tw-ring-color: rgba(45, 212, 191, 0.35) !important;
+    }
 }
