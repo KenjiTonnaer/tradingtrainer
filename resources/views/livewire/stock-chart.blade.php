@@ -203,7 +203,30 @@
         <div class="flex-1 min-w-0 flex flex-col gap-4">
             <!-- Price Chart -->
             <div class="bg-slate-50 rounded-2xl p-6 shadow-[0_16px_30px_-22px_rgba(15,23,42,0.5)] border border-slate-200">
-                <h3 class="text-lg font-bold text-gray-900 mb-4">Price Chart</h3>
+                <div class="flex flex-wrap items-center justify-between gap-3 mb-4">
+                    <h3 class="text-lg font-bold text-gray-900">Price Chart</h3>
+                    <div
+                        class="flex rounded-lg border border-slate-200 bg-white p-1"
+                        x-data="{ chartType: localStorage.getItem('tradingtrainer-chart-type') || 'candles' }"
+                        x-init="$watch('chartType', value => {
+                            localStorage.setItem('tradingtrainer-chart-type', value);
+                            window.dispatchEvent(new CustomEvent('chart-type-change', { detail: { type: value } }));
+                        })"
+                    >
+                        <button
+                            type="button"
+                            @click="chartType = 'line'"
+                            :class="chartType === 'line' ? 'bg-purple-600 text-white shadow-sm' : 'text-slate-600 hover:bg-slate-50'"
+                            class="rounded-md px-3 py-1.5 text-xs font-semibold transition"
+                        >Lijngrafiek</button>
+                        <button
+                            type="button"
+                            @click="chartType = 'candles'"
+                            :class="chartType === 'candles' ? 'bg-purple-600 text-white shadow-sm' : 'text-slate-600 hover:bg-slate-50'"
+                            class="rounded-md px-3 py-1.5 text-xs font-semibold transition"
+                        >Kaarsen</button>
+                    </div>
+                </div>
                 <div
                     id="stock-chart-{{ $symbol }}"
                     class="w-full rounded-lg"
@@ -718,6 +741,14 @@
             upColor: '#10b981', downColor: '#ef4444',
             borderVisible: false, wickUpColor: '#10b981', wickDownColor: '#ef4444',
         });
+        const lineSeries = chart.addSeries(LightweightCharts.LineSeries, {
+            color: '#7c3aed',
+            lineWidth: 3,
+            visible: localStorage.getItem('tradingtrainer-chart-type') === 'line',
+        });
+        candleSeries.applyOptions({
+            visible: localStorage.getItem('tradingtrainer-chart-type') !== 'line',
+        });
 
         const volumeChart = LightweightCharts.createChart(volContainer, {
             layout: { background: { type: 'solid', color: '#ffffff' }, textColor: '#1f2937' },
@@ -735,9 +766,16 @@
 
         if (initialData.length) {
             candleSeries.setData(initialData);
+            lineSeries.setData(initialData.map(d => ({ time: d.time, value: d.close })));
             volumeSeries.setData(initialData.map(d => ({ time: d.time, value: d.volume ?? 0 })));
             chart.timeScale().fitContent();
         }
+
+        window.addEventListener('chart-type-change', (event) => {
+            const isLine = event.detail.type === 'line';
+            candleSeries.applyOptions({ visible: !isLine });
+            lineSeries.applyOptions({ visible: isLine });
+        });
 
         // Live price polling — stuurt event naar tradePanel
         let lastKnownPrice = initialData.length ? initialData[initialData.length - 1].close : 0;
@@ -754,6 +792,7 @@
                     lastKnownPrice = price;
                     const ts = Math.floor(Date.now() / 1000);
                     candleSeries.update({ time: ts, open: price, high: price, low: price, close: price });
+                    lineSeries.update({ time: ts, value: price });
                     window.dispatchEvent(new CustomEvent('live-price-update', { detail: { symbol, price } }));
                 }
             } catch (e) { console.warn('Latest bar fetch failed:', e); }

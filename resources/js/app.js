@@ -44,9 +44,13 @@ const initializeStockCharts = () => {
 			width: container.clientWidth,
 			height: 500,
 		});
+		const chartType = localStorage.getItem('tradingtrainer-chart-type') || 'candles';
 		const candleSeries = chart.addSeries(LightweightChartsAll.CandlestickSeries, {
 			upColor: '#10b981', downColor: '#ef4444', borderVisible: false,
-			wickUpColor: '#10b981', wickDownColor: '#ef4444',
+			wickUpColor: '#10b981', wickDownColor: '#ef4444', visible: chartType !== 'line',
+		});
+		const lineSeries = chart.addSeries(LightweightChartsAll.LineSeries, {
+			color: '#7c3aed', lineWidth: 3, visible: chartType === 'line',
 		});
 
 		const volumeChart = createChart(volumeContainer, {
@@ -66,9 +70,16 @@ const initializeStockCharts = () => {
 
 		if (initialData.length) {
 			candleSeries.setData(initialData);
+			lineSeries.setData(initialData.map((item) => ({ time: item.time, value: item.close })));
 			volumeSeries.setData(initialData.map((item) => ({ time: item.time, value: item.volume ?? 0 })));
 			chart.timeScale().fitContent();
 		}
+
+		window.addEventListener('chart-type-change', (event) => {
+			const isLine = event.detail.type === 'line';
+			candleSeries.applyOptions({ visible: !isLine });
+			lineSeries.applyOptions({ visible: isLine });
+		});
 
 		let lastKnownPrice = initialData.length ? initialData[initialData.length - 1].close : 0;
 		const pollLatestPrice = async () => {
@@ -83,6 +94,7 @@ const initializeStockCharts = () => {
 					lastKnownPrice = price;
 					const time = Math.floor(Date.now() / 1000);
 					candleSeries.update({ time, open: price, high: price, low: price, close: price });
+					lineSeries.update({ time, value: price });
 					window.dispatchEvent(new CustomEvent('live-price-update', { detail: { symbol, price } }));
 				}
 			} catch (error) {
