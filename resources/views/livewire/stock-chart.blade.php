@@ -238,7 +238,7 @@
                 <div class="bg-gradient-to-r from-purple-600 to-pink-500 px-6 py-4">
                     <p class="text-white text-xs font-semibold uppercase tracking-wider mb-1">Paper Trading</p>
                     <div class="flex items-baseline gap-2">
-                        <span class="text-white text-2xl font-bold" x-text="price > 0 ? '$' + price.toFixed(2) : '-'"></span>
+                        <span class="text-white text-2xl font-bold" x-text="price > 0 ? '$' + formatNumber(price) : '-'"></span>
                         <span class="text-purple-200 text-sm" x-text="symbol"></span>
                     </div>
                 </div>
@@ -250,7 +250,7 @@
                         <span class="text-sm text-gray-600 font-medium">💰 Beschikbaar</span>
                         <span class="text-sm font-bold text-gray-900"
                             data-wallet-balance="{{ auth()->user()->wallet->balance ?? 0 }}"
-                            x-text="'€' + walletBalance.toLocaleString('nl-NL', {minimumFractionDigits:2, maximumFractionDigits:2})">
+                            x-text="'€' + formatNumber(walletBalance)">
                         </span>                    
                     </div>
 
@@ -319,7 +319,7 @@
                             x-show="side === 'sell' && quantity > availableQuantity"
                             class="mt-2 text-xs font-medium text-rose-700"
                         >
-                            Je kunt maximaal <span x-text="availableQuantity"></span> {{ $symbol }} verkopen.
+                            Je kunt maximaal <span x-text="formatNumber(availableQuantity)"></span> {{ $symbol }} verkopen.
                         </p>
                         <div x-show="side === 'sell'" class="mt-3 flex flex-wrap gap-2">
                             <button
@@ -380,7 +380,7 @@
                             >
                         </div>
                         <p class="text-xs text-gray-500 mt-1" x-show="quantity > 0">
-                            ≈ <span x-text="quantity"></span> <span x-text="symbol"></span>
+                            ≈ <span x-text="formatNumber(quantity, 6)"></span> <span x-text="symbol"></span>
                         </p>
                     </div>
 
@@ -429,7 +429,7 @@
                             <button
                                 @click="setByPercent(pct)"
                                 class="border border-teal-200 bg-white px-3 py-1.5 text-xs font-semibold text-teal-700 transition hover:border-teal-300"
-                                x-text="pct + '%'"
+                                x-text="pct === 100 ? 'Alles' : pct + '%'"
                             ></button>
                         </template>
                     </div>
@@ -442,10 +442,10 @@
                     <div class="bg-gray-50 rounded-xl px-4 py-3 space-y-1">
                         <div class="flex justify-between text-sm">
                             <span class="text-gray-600">Subtotaal</span>
-                            <span class="font-semibold text-gray-900" x-text="price > 0 ? '$' + total.toFixed(2) : '-'"></span>
+                            <span class="font-semibold text-gray-900" x-text="price > 0 ? '$' + formatNumber(total) : '-'"></span>
                         </div>
                         <div class="flex justify-between text-xs text-gray-500">
-                            <span x-text="quantity + ' × ' + (price > 0 ? '$' + price.toFixed(2) : '-')"></span>
+                            <span x-text="formatNumber(quantity, 6) + ' × ' + (price > 0 ? '$' + formatNumber(price) : '-')"></span>
                         </div>
                     </div>
 
@@ -529,6 +529,42 @@
             </button>
         </div>
 
+        <!-- Portfolio filters -->
+        <div class="px-6 py-4 border-b border-gray-100 bg-slate-50/70 flex flex-col gap-3 sm:flex-row sm:items-center">
+            <label class="relative flex-1">
+                <span class="sr-only">Zoek in portfolio</span>
+                <svg class="pointer-events-none absolute left-3 top-2.5 h-4 w-4 text-slate-400" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
+                    <path fill-rule="evenodd" d="M8.5 3a5.5 5.5 0 1 0 3.478 9.762l3.63 3.63 1.06-1.06-3.63-3.63A5.5 5.5 0 0 0 8.5 3ZM4.5 8.5a4 4 0 1 1 8 0 4 4 0 0 1-8 0Z" clip-rule="evenodd"/>
+                </svg>
+                <input
+                    type="search"
+                    x-model="searchTerm"
+                    placeholder="Zoek op symbool, bijvoorbeeld AAPL"
+                    class="w-full rounded-lg border border-slate-200 bg-white py-2 pl-9 pr-3 text-sm text-slate-700 outline-none transition focus:border-purple-400 focus:ring-2 focus:ring-purple-100"
+                >
+            </label>
+            <div class="flex rounded-lg border border-slate-200 bg-white p-1">
+                <button
+                    type="button"
+                    @click="assetFilter = 'all'"
+                    :class="assetFilter === 'all' ? 'bg-purple-600 text-white shadow-sm' : 'text-slate-600 hover:bg-slate-50'"
+                    class="rounded-md px-3 py-1.5 text-xs font-semibold transition"
+                >Alles</button>
+                <button
+                    type="button"
+                    @click="assetFilter = 'stock'"
+                    :class="assetFilter === 'stock' ? 'bg-purple-600 text-white shadow-sm' : 'text-slate-600 hover:bg-slate-50'"
+                    class="rounded-md px-3 py-1.5 text-xs font-semibold transition"
+                >Aandelen</button>
+                <button
+                    type="button"
+                    @click="assetFilter = 'crypto'"
+                    :class="assetFilter === 'crypto' ? 'bg-purple-600 text-white shadow-sm' : 'text-slate-600 hover:bg-slate-50'"
+                    class="rounded-md px-3 py-1.5 text-xs font-semibold transition"
+                >Crypto</button>
+            </div>
+        </div>
+
         <!-- Loading state -->
         <div x-show="loading && positions.length === 0" class="px-6 py-12 text-center">
             <svg class="animate-spin w-8 h-8 text-purple-500 mx-auto mb-3" fill="none" viewBox="0 0 24 24">
@@ -545,8 +581,14 @@
             <p class="text-sm text-gray-400 mt-1">Gebruik het trade paneel hierboven om je eerste aandeel te kopen.</p>
         </div>
 
+        <div x-show="!loading && positions.length > 0 && filteredPositions.length === 0" class="px-6 py-12 text-center">
+            <div class="text-4xl mb-3">🔎</div>
+            <p class="text-gray-500 font-medium">Geen posities gevonden</p>
+            <p class="text-sm text-gray-400 mt-1">Pas je zoekterm of filter aan.</p>
+        </div>
+
         <!-- Tabel -->
-        <div x-show="positions.length > 0" class="overflow-x-auto">
+        <div x-show="filteredPositions.length > 0" class="overflow-x-auto">
             <table class="w-full text-sm">
                 <thead class="bg-gray-50 border-b border-gray-100">
                     <tr>
@@ -560,7 +602,7 @@
                     </tr>
                 </thead>
                 <tbody class="divide-y divide-gray-50">
-                    <template x-for="pos in positions" :key="pos.symbol">
+                    <template x-for="pos in filteredPositions" :key="pos.symbol">
                         <tr class="hover:bg-gray-50 transition-colors">
                             <!-- Symbool -->
                             <td class="px-6 py-4">
@@ -575,21 +617,21 @@
                                 </div>
                             </td>
                             <!-- Aandelen -->
-                            <td class="px-6 py-4 text-right font-semibold text-gray-900" x-text="parseFloat(pos.quantity).toLocaleString('nl-NL', {maximumFractionDigits:6})"></td>
+                            <td class="px-6 py-4 text-right font-semibold text-gray-900" x-text="formatNumber(pos.quantity, 6)"></td>
                             <!-- Gem. aankoopprijs -->
-                            <td class="px-6 py-4 text-right text-gray-600" x-text="'$' + parseFloat(pos.avg_buy_price).toFixed(2)"></td>
+                            <td class="px-6 py-4 text-right text-gray-600" x-text="'$' + formatNumber(pos.avg_buy_price)"></td>
                             <!-- Huidige prijs -->
                             <td class="px-6 py-4 text-right">
                                 <span
                                     class="font-semibold"
                                     :class="(livePrices[pos.symbol] || 0) >= parseFloat(pos.avg_buy_price) ? 'text-green-600' : 'text-red-600'"
-                                    x-text="livePrices[pos.symbol] ? '$' + livePrices[pos.symbol].toFixed(2) : '—'"
+                                    x-text="livePrices[pos.symbol] ? '$' + formatNumber(livePrices[pos.symbol]) : '—'"
                                 ></span>
                             </td>
                             <!-- Huidige waarde -->
                             <td class="px-6 py-4 text-right font-semibold text-gray-900"
                                 x-text="livePrices[pos.symbol]
-                                    ? '$' + (parseFloat(pos.quantity) * livePrices[pos.symbol]).toLocaleString('en-US', {minimumFractionDigits:2, maximumFractionDigits:2})
+                                    ? '$' + formatNumber(parseFloat(pos.quantity) * livePrices[pos.symbol])
                                     : '—'"
                             ></td>
                             <!-- Absolute W&V -->
@@ -598,7 +640,7 @@
                                     <span
                                         :class="(parseFloat(pos.quantity) * livePrices[pos.symbol] - parseFloat(pos.total_invested)) >= 0 ? 'text-green-600 font-bold' : 'text-red-600 font-bold'"
                                         x-text="((parseFloat(pos.quantity) * livePrices[pos.symbol] - parseFloat(pos.total_invested)) >= 0 ? '+' : '') +
-                                                '$' + (parseFloat(pos.quantity) * livePrices[pos.symbol] - parseFloat(pos.total_invested)).toFixed(2)"
+                                                '$' + formatNumber(parseFloat(pos.quantity) * livePrices[pos.symbol] - parseFloat(pos.total_invested))"
                                     ></span>
                                 </template>
                                 <template x-if="!livePrices[pos.symbol]">
@@ -629,16 +671,16 @@
                         <td class="px-6 py-4 font-bold text-gray-900" colspan="4">Totaal portfolio</td>
                         <!-- Totale huidige waarde -->
                         <td class="px-6 py-4 text-right font-bold text-gray-900"
-                            x-text="'$' + positions.reduce((sum, pos) => sum + (livePrices[pos.symbol] ? parseFloat(pos.quantity) * livePrices[pos.symbol] : 0), 0).toLocaleString('en-US', {minimumFractionDigits:2, maximumFractionDigits:2})"
+                            x-text="'$' + formatNumber(filteredPositions.reduce((sum, pos) => sum + (livePrices[pos.symbol] ? parseFloat(pos.quantity) * livePrices[pos.symbol] : 0), 0))"
                         ></td>
                         <!-- Totale W&V absoluut -->
                         <td class="px-6 py-4 text-right">
                             <span
-                                :class="positions.reduce((sum, pos) => sum + (livePrices[pos.symbol] ? parseFloat(pos.quantity) * livePrices[pos.symbol] - parseFloat(pos.total_invested) : 0), 0) >= 0
+                                :class="filteredPositions.reduce((sum, pos) => sum + (livePrices[pos.symbol] ? parseFloat(pos.quantity) * livePrices[pos.symbol] - parseFloat(pos.total_invested) : 0), 0) >= 0
                                     ? 'font-bold text-green-600'
                                     : 'font-bold text-red-600'"
-                                x-text="(positions.reduce((sum, pos) => sum + (livePrices[pos.symbol] ? parseFloat(pos.quantity) * livePrices[pos.symbol] - parseFloat(pos.total_invested) : 0), 0) >= 0 ? '+' : '') +
-                                        '$' + positions.reduce((sum, pos) => sum + (livePrices[pos.symbol] ? parseFloat(pos.quantity) * livePrices[pos.symbol] - parseFloat(pos.total_invested) : 0), 0).toFixed(2)"
+                                x-text="(filteredPositions.reduce((sum, pos) => sum + (livePrices[pos.symbol] ? parseFloat(pos.quantity) * livePrices[pos.symbol] - parseFloat(pos.total_invested) : 0), 0) >= 0 ? '+' : '') +
+                                        '$' + formatNumber(filteredPositions.reduce((sum, pos) => sum + (livePrices[pos.symbol] ? parseFloat(pos.quantity) * livePrices[pos.symbol] - parseFloat(pos.total_invested) : 0), 0))"
                             ></span>
                         </td>
                         <td class="px-6 py-4"></td>

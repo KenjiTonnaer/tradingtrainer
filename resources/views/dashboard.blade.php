@@ -2,6 +2,24 @@
     @php
         $user = auth()->user();
         $allTrades = $user->paperTrades()->latest()->take(6)->get();
+        $latestBuyAt = $user->paperTrades()
+            ->where('type', 'buy')
+            ->latest('created_at')
+            ->get()
+            ->groupBy('symbol')
+            ->map(fn ($trades) => $trades->first()->created_at?->toISOString());
+        $portfolioPositions = $user->paperPositions()
+            ->latest()
+            ->get()
+            ->map(fn ($position) => [
+                'symbol' => $position->symbol,
+                'asset_type' => $position->asset_type,
+                'quantity' => (float) $position->quantity,
+                'total_invested' => (float) $position->total_invested,
+                'avg_buy_price' => (float) $position->avg_buy_price,
+                'last_buy_at' => $latestBuyAt[$position->symbol] ?? null,
+            ])
+            ->values();
         $sellTrades = $user->paperTrades()->where('type', 'sell')->get();
         $realizedPnl = round($sellTrades->sum(fn ($trade) => (float) ($trade->pnl ?? 0)), 2);
         $winningTrades = $sellTrades->filter(fn ($trade) => (float) ($trade->pnl ?? 0) > 0)->count();
@@ -77,7 +95,11 @@
         </div>
 
         <div class="grid gap-6 lg:grid-cols-[1.4fr_1fr]">
-            <div class="rounded-3xl border border-slate-200 bg-white p-6 shadow-lg shadow-slate-200/60">
+            <div
+                class="rounded-3xl border border-slate-200 bg-white p-6 shadow-lg shadow-slate-200/60"
+                x-data="dashboardPortfolio(@js($portfolioPositions))"
+                x-init="init()"
+            >
                 <div class="mb-5 flex items-center justify-between">
                     <div>
                         <p class="text-sm font-semibold uppercase tracking-[0.15em] text-slate-500">Portfolio</p>
@@ -86,29 +108,75 @@
                     <a href="{{ route('markets.show', ['symbol' => 'AAPL']) }}" class="rounded-full bg-violet-50 px-3 py-1.5 text-sm font-semibold text-violet-700 transition hover:bg-violet-100">Open markt</a>
                 </div>
 
+                <div class="mb-4 flex flex-col gap-3 sm:flex-row">
+                    <label class="relative flex-1">
+                        <span class="sr-only">Zoek in dashboardportfolio</span>
+                        <svg class="pointer-events-none absolute left-3 top-2.5 h-4 w-4 text-slate-400" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
+                            <path fill-rule="evenodd" d="M8.5 3a5.5 5.5 0 1 0 3.478 9.762l3.63 3.63 1.06-1.06-3.63-3.63A5.5 5.5 0 0 0 8.5 3ZM4.5 8.5a4 4 0 1 1 8 0 4 4 0 0 1-8 0Z" clip-rule="evenodd"/>
+                        </svg>
+                        <input
+                            type="search"
+                            x-model="searchTerm"
+                            placeholder="Zoek op symbool"
+                            class="w-full rounded-lg border border-slate-200 bg-slate-50 py-2 pl-9 pr-3 text-sm text-slate-700 outline-none transition focus:border-violet-400 focus:ring-2 focus:ring-violet-100"
+                        >
+                    </label>
+                    <select
+                        x-model="assetFilter"
+                        class="rounded-lg border border-slate-200 bg-slate-50 px-3 py-2 text-sm font-semibold text-slate-600 outline-none focus:border-violet-400 focus:ring-2 focus:ring-violet-100"
+                    >
+                        <option value="all">Alles</option>
+                        <option value="stock">Aandelen</option>
+                        <option value="crypto">Crypto</option>
+                    </select>
+                    <select
+                        x-model="sortBy"
+                        class="rounded-lg border border-slate-200 bg-slate-50 px-3 py-2 text-sm font-semibold text-slate-600 outline-none focus:border-violet-400 focus:ring-2 focus:ring-violet-100"
+                    >
+                        <option value="symbol">Alfabetisch</option>
+                        <option value="recent">Recent aangekocht</option>
+                        <option value="value">Totale waarde</option>
+                        <option value="pnl">Winst/verlies</option>
+                    </select>
+                </div>
+
                 <div class="space-y-3">
-                    @forelse ($user->paperPositions()->latest()->get() as $position)
+                    <template x-for="position in filteredPositions" :key="position.symbol">
                         <div class="flex items-center justify-between rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3">
                             <div class="flex items-center gap-3">
                                 <div class="flex h-10 w-10 items-center justify-center rounded-xl bg-gradient-to-br from-violet-500 to-fuchsia-500 font-bold text-white">
-                                    {{ substr($position->symbol, 0, 2) }}
+                                    <span x-text="position.symbol.substring(0, 2)"></span>
                                 </div>
                                 <div>
-                                    <p class="font-bold text-slate-800">{{ $position->symbol }}</p>
-                                    <p class="text-xs text-slate-500">{{ $position->quantity }} in bezit</p>
+                                    <p class="font-bold text-slate-800" x-text="position.symbol"></p>
+                                    <p class="text-xs text-slate-500" x-text="Number(position.quantity).toLocaleString('nl-NL', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) + ' in bezit'"></p>
                                 </div>
                             </div>
                             <div class="text-right">
-                                <p class="font-bold text-slate-900">€ {{ number_format((float) $position->total_invested, 2, ',', '.') }}</p>
-                                <p class="text-xs text-slate-500">Gem. prijs € {{ number_format((float) $position->avg_buy_price, 2, ',', '.') }}</p>
+                                <p class="font-bold text-slate-900" x-text="livePrices[position.symbol] ? '€ ' + formatNumber(currentValue(position)) : 'Waarde laden...'"></p>
+                                <p class="text-xs text-slate-500" x-text="'Ingelegd € ' + formatNumber(position.total_invested)"></p>
+                                <p
+                                    class="text-xs font-semibold"
+                                    :class="pnl(position) >= 0 ? 'text-emerald-600' : 'text-red-600'"
+                                    x-text="livePrices[position.symbol] ? (pnl(position) >= 0 ? '+' : '') + '€ ' + formatNumber(pnl(position)) + ' W/V' : 'W/V laden...'"
+                                ></p>
                             </div>
                         </div>
-                    @empty
-                        <div class="rounded-2xl border border-dashed border-slate-300 bg-slate-50 px-4 py-8 text-center">
-                            <p class="text-lg font-semibold text-slate-700">Nog geen open posities</p>
-                            <p class="mt-1 text-sm text-slate-500">Je eerste trade maakt meteen je portfolio zichtbaar.</p>
-                        </div>
-                    @endforelse
+                    </template>
+                    <div
+                        x-show="positions.length === 0"
+                        class="rounded-2xl border border-dashed border-slate-300 bg-slate-50 px-4 py-8 text-center"
+                    >
+                        <p class="text-lg font-semibold text-slate-700">Nog geen open posities</p>
+                        <p class="mt-1 text-sm text-slate-500">Je eerste trade maakt meteen je portfolio zichtbaar.</p>
+                    </div>
+                    <div
+                        x-show="positions.length > 0 && filteredPositions.length === 0"
+                        class="rounded-2xl border border-dashed border-slate-300 bg-slate-50 px-4 py-8 text-center"
+                    >
+                        <p class="text-lg font-semibold text-slate-700">Geen posities gevonden</p>
+                        <p class="mt-1 text-sm text-slate-500">Pas je zoekterm of filter aan.</p>
+                    </div>
                 </div>
             </div>
 
@@ -132,7 +200,7 @@
                                 </div>
                                 <div>
                                     <p class="font-bold text-slate-900">{{ $trade->symbol }}</p>
-                                    <p class="text-xs text-slate-500">{{ ucfirst($trade->type) }} • {{ number_format((float) $trade->quantity, 6, ',', '.') }}</p>
+                                    <p class="text-xs text-slate-500">{{ ucfirst($trade->type) }} • {{ number_format((float) $trade->quantity, 2, ',', '.') }}</p>
                                 </div>
                             </div>
                             <div class="text-right">

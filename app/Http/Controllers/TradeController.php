@@ -96,7 +96,7 @@ class TradeController extends Controller
 
         return response()->json([
             'success'        => true,
-            'message'        => "✅ Gekocht: {$qty} × {$symbol} @ €" . number_format($price, 2, ',', '.'),
+            'message'        => "✅ Gekocht: " . number_format($qty, 2, ',', '.') . " × {$symbol} @ €" . number_format($price, 2, ',', '.'),
             'wallet_balance' => $user->wallet->fresh()->balance,
         ]);
     }
@@ -118,7 +118,7 @@ class TradeController extends Controller
         $position = PaperPosition::where('user_id', $user->id)->where('symbol', $symbol)->first();
 
         if (!$position || (float)$position->quantity < $qty) {
-            $heeft = $position ? number_format($position->quantity, 6) : '0';
+            $heeft = $position ? number_format((float) $position->quantity, 2, ',', '.') : '0,00';
             return response()->json([
                 'success' => false,
                 'message' => "Je hebt niet genoeg {$symbol}. Je bezit {$heeft}, maar probeert {$qty} te verkopen.",
@@ -162,7 +162,7 @@ class TradeController extends Controller
 
         return response()->json([
             'success'        => true,
-            'message'        => "✅ Verkocht: {$qty} × {$symbol} @ €" . number_format($price, 2, ',', '.'),
+            'message'        => "✅ Verkocht: " . number_format($qty, 2, ',', '.') . " × {$symbol} @ €" . number_format($price, 2, ',', '.'),
             'wallet_balance' => $user->wallet->fresh()->balance,
         ]);
     }

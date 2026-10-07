@@ -227,8 +227,19 @@ const registerTradingComponents = () => {
 		setByPercent(percent) {
 			if (this.price <= 0 || this.walletBalance <= 0) return;
 			const rawQuantity = (this.walletBalance * (percent / 100)) / this.price;
-			this.quantity = this.isCrypto() ? parseFloat(rawQuantity.toFixed(6)) : Math.floor(rawQuantity);
+			const precision = 1000000;
+			const affordableQuantity = Math.floor(rawQuantity * precision) / precision;
+			this.quantity = percent === 100
+				? affordableQuantity
+				: (this.isCrypto() ? parseFloat(rawQuantity.toFixed(6)) : Math.floor(rawQuantity));
 			this.amountInput = (this.quantity * this.price).toFixed(2);
+		},
+
+		formatNumber(value) {
+			return Number(value || 0).toLocaleString('nl-NL', {
+				minimumFractionDigits: 2,
+				maximumFractionDigits: 2,
+			});
 		},
 
 		async submitOrder() {
@@ -277,6 +288,26 @@ const registerTradingComponents = () => {
 		livePrices: {},
 		loading: false,
 		pollTimer: null,
+		searchTerm: '',
+		assetFilter: 'all',
+
+		formatNumber(value) {
+			return Number(value || 0).toLocaleString('nl-NL', {
+				minimumFractionDigits: 2,
+				maximumFractionDigits: 2,
+			});
+		},
+
+		get filteredPositions() {
+			const search = this.searchTerm.trim().toLowerCase();
+
+			return this.positions.filter((position) => {
+				const matchesSearch = !search || position.symbol.toLowerCase().includes(search);
+				const matchesType = this.assetFilter === 'all' || position.asset_type === this.assetFilter;
+
+				return matchesSearch && matchesType;
+			});
+		},
 
 		init() {
 			this.load();
@@ -321,6 +352,66 @@ const registerTradingComponents = () => {
 					}
 				} catch (error) {
 					console.warn('Live price failed for', position.symbol);
+				}
+			}
+		},
+	}));
+
+	window.Alpine.data('dashboardPortfolio', (positions) => ({
+		positions,
+		livePrices: {},
+		searchTerm: '',
+		assetFilter: 'all',
+		sortBy: 'symbol',
+
+		formatNumber(value) {
+			return Number(value || 0).toLocaleString('nl-NL', {
+				minimumFractionDigits: 2,
+				maximumFractionDigits: 2,
+			});
+		},
+
+		currentValue(position) {
+			return (parseFloat(position.quantity) || 0) * (this.livePrices[position.symbol] || 0);
+		},
+
+		pnl(position) {
+			return this.currentValue(position) - (parseFloat(position.total_invested) || 0);
+		},
+
+		get filteredPositions() {
+			const search = this.searchTerm.trim().toLowerCase();
+			const filtered = this.positions.filter((position) => {
+				return (!search || position.symbol.toLowerCase().includes(search))
+					&& (this.assetFilter === 'all' || position.asset_type === this.assetFilter);
+			});
+
+			return filtered.sort((left, right) => {
+				if (this.sortBy === 'value') return this.currentValue(right) - this.currentValue(left);
+				if (this.sortBy === 'pnl') return this.pnl(right) - this.pnl(left);
+				if (this.sortBy === 'symbol') return left.symbol.localeCompare(right.symbol);
+				return new Date(right.last_buy_at || 0) - new Date(left.last_buy_at || 0);
+			});
+		},
+
+		init() {
+			this.fetchLivePrices();
+			setInterval(() => this.fetchLivePrices(), 15000);
+		},
+
+		async fetchLivePrices() {
+			for (const position of this.positions) {
+				try {
+					const response = await fetch(`/markets/${position.symbol}/bars/latest`, {
+						headers: { Accept: 'application/json', 'X-Requested-With': 'XMLHttpRequest' },
+					});
+					if (response.ok) {
+						const data = await response.json();
+						const price = parseFloat(data.price ?? data.c ?? data.close ?? 0);
+						if (price > 0) this.livePrices[position.symbol] = price;
+					}
+				} catch (error) {
+					console.warn('Dashboard live price failed for', position.symbol);
 				}
 			}
 		},
@@ -377,4 +468,3 @@ document.addEventListener('DOMContentLoaded', () => {
 		window.Livewire.hook('morphed', () => requestAnimationFrame(initializeStockCharts));
 	}
 });
-
