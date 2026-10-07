@@ -416,6 +416,75 @@ const registerTradingComponents = () => {
 			}
 		},
 	}));
+
+	window.Alpine.data('dashboardOrders', (orders) => ({
+		orders,
+		searchTerm: '',
+		typeFilter: 'all',
+		assetFilter: 'all',
+		datePreset: 'all',
+		fromDate: '',
+		toDate: '',
+		sortBy: 'date-desc',
+
+		formatNumber(value) {
+			return Number(value || 0).toLocaleString('nl-NL', {
+				minimumFractionDigits: 2,
+				maximumFractionDigits: 2,
+			});
+		},
+
+		formatDate(value) {
+			return new Date(value).toLocaleString('nl-NL', {
+				dateStyle: 'medium',
+				timeStyle: 'short',
+			});
+		},
+
+		isInDateRange(order) {
+			const date = new Date(order.created_at);
+			const today = new Date();
+			let start = null;
+
+			if (this.datePreset === 'today') {
+				start = new Date(today.getFullYear(), today.getMonth(), today.getDate());
+			} else if (this.datePreset === '7d') {
+				start = new Date(today);
+				start.setDate(start.getDate() - 7);
+			} else if (this.datePreset === '30d') {
+				start = new Date(today);
+				start.setDate(start.getDate() - 30);
+			} else if (this.datePreset === 'custom' && this.fromDate) {
+				start = new Date(`${this.fromDate}T00:00:00`);
+			}
+
+			if (start && date < start) return false;
+			if (this.datePreset === 'custom' && this.toDate) {
+				const end = new Date(`${this.toDate}T23:59:59.999`);
+				if (date > end) return false;
+			}
+
+			return true;
+		},
+
+		get filteredOrders() {
+			const search = this.searchTerm.trim().toLowerCase();
+			const filtered = this.orders.filter((order) => {
+				return (!search || order.symbol.toLowerCase().includes(search))
+					&& (this.typeFilter === 'all' || order.type === this.typeFilter)
+					&& (this.assetFilter === 'all' || order.asset_type === this.assetFilter)
+					&& this.isInDateRange(order);
+			});
+
+			return filtered.sort((left, right) => {
+				if (this.sortBy === 'amount') return right.total_value - left.total_value;
+				if (this.sortBy === 'quantity') return right.quantity - left.quantity;
+				if (this.sortBy === 'symbol') return left.symbol.localeCompare(right.symbol);
+				const direction = this.sortBy === 'date-asc' ? 1 : -1;
+				return (new Date(left.created_at) - new Date(right.created_at)) * direction;
+			});
+		},
+	}));
 };
 
 document.addEventListener('alpine:init', registerTradingComponents);

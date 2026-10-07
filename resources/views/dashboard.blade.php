@@ -1,7 +1,20 @@
 <x-layouts.app :title="__('Dashboard')">
     @php
         $user = auth()->user();
-        $allTrades = $user->paperTrades()->latest()->take(6)->get();
+        $allTrades = $user->paperTrades()->latest()->get();
+        $dashboardOrders = $allTrades->map(fn ($trade) => [
+            'symbol' => $trade->symbol,
+            'type' => $trade->type,
+            'asset_type' => $trade->asset_type,
+            'quantity' => (float) $trade->quantity,
+            'price_per_unit' => (float) $trade->price_per_unit,
+            'total_value' => (float) $trade->total_value,
+            'wallet_balance_after' => (float) $trade->wallet_balance_after,
+            'status' => $trade->status,
+            'notes' => $trade->notes,
+            'pnl' => $trade->pnl,
+            'created_at' => $trade->created_at?->toISOString(),
+        ])->values();
         $latestBuyAt = $user->paperTrades()
             ->where('type', 'buy')
             ->latest('created_at')
@@ -180,42 +193,76 @@
                 </div>
             </div>
 
-            <div class="rounded-3xl border border-slate-200 bg-slate-50 p-6 shadow-[0_16px_30px_-22px_rgba(15,23,42,0.5)]">
+            <div
+                class="rounded-3xl border border-slate-200 bg-slate-50 p-6 shadow-[0_16px_30px_-22px_rgba(15,23,42,0.5)]"
+                x-data="dashboardOrders(@js($dashboardOrders))"
+            >
                 <div class="mb-5">
                     <p class="text-sm font-semibold uppercase tracking-[0.15em] text-slate-500">Recent trades</p>
                     <h2 class="mt-1 text-2xl font-black text-slate-900">Laatste orders</h2>
                 </div>
 
-                <div class="space-y-3">
-                    @forelse ($allTrades as $trade)
-                        @php
-                            $pnl = (float) ($trade->pnl ?? 0);
-                            $positive = $trade->type === 'buy' ? false : $pnl >= 0;
-                        @endphp
+                <div class="mb-4 grid gap-3 sm:grid-cols-2">
+                    <input
+                        type="search"
+                        x-model="searchTerm"
+                        placeholder="Zoek op symbool"
+                        class="rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm text-slate-700 outline-none focus:border-violet-400 focus:ring-2 focus:ring-violet-100"
+                    >
+                    <select x-model="datePreset" class="rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm font-semibold text-slate-600 outline-none focus:border-violet-400 focus:ring-2 focus:ring-violet-100">
+                        <option value="all">Alle datums</option>
+                        <option value="today">Vandaag</option>
+                        <option value="7d">Afgelopen 7 dagen</option>
+                        <option value="30d">Afgelopen 30 dagen</option>
+                        <option value="custom">Eigen datumbereik</option>
+                    </select>
+                    <select x-model="typeFilter" class="rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm font-semibold text-slate-600 outline-none focus:border-violet-400 focus:ring-2 focus:ring-violet-100">
+                        <option value="all">Alle ordertypes</option>
+                        <option value="buy">Alleen aankopen</option>
+                        <option value="sell">Alleen verkopen</option>
+                    </select>
+                    <select x-model="assetFilter" class="rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm font-semibold text-slate-600 outline-none focus:border-violet-400 focus:ring-2 focus:ring-violet-100">
+                        <option value="all">Alle assets</option>
+                        <option value="stock">Aandelen</option>
+                        <option value="crypto">Crypto</option>
+                    </select>
+                    <select x-model="sortBy" class="rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm font-semibold text-slate-600 outline-none focus:border-violet-400 focus:ring-2 focus:ring-violet-100">
+                        <option value="date-desc">Nieuwste eerst</option>
+                        <option value="date-asc">Oudste eerst</option>
+                        <option value="amount">Hoogste bedrag</option>
+                        <option value="quantity">Grootste hoeveelheid</option>
+                        <option value="symbol">Alfabetisch</option>
+                    </select>
+                    <div x-show="datePreset === 'custom'" class="flex gap-2 sm:col-span-2">
+                        <input type="date" x-model="fromDate" aria-label="Vanaf datum" class="min-w-0 flex-1 rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm text-slate-600">
+                        <input type="date" x-model="toDate" aria-label="Tot en met datum" class="min-w-0 flex-1 rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm text-slate-600">
+                    </div>
+                </div>
 
-                        <div class="flex items-center justify-between rounded-2xl border border-slate-200 bg-slate-50 p-3">
+                <div class="space-y-3">
+                    <template x-for="order in filteredOrders" :key="order.symbol + order.created_at + order.type">
+                        <div class="flex items-center justify-between rounded-2xl border border-slate-200 bg-white p-3">
                             <div class="flex items-center gap-3">
-                                <div class="flex h-10 w-10 items-center justify-center rounded-xl {{ $trade->type === 'buy' ? 'bg-emerald-500' : 'bg-rose-500' }} font-bold text-white">
-                                    {{ strtoupper(substr($trade->symbol, 0, 2)) }}
+                                <div class="flex h-10 w-10 items-center justify-center rounded-xl font-bold text-white" :class="order.type === 'buy' ? 'bg-emerald-500' : 'bg-rose-500'">
+                                    <span x-text="order.symbol.substring(0, 2)"></span>
                                 </div>
                                 <div>
-                                    <p class="font-bold text-slate-900">{{ $trade->symbol }}</p>
-                                    <p class="text-xs text-slate-500">{{ ucfirst($trade->type) }} • {{ number_format((float) $trade->quantity, 2, ',', '.') }}</p>
+                                    <p class="font-bold text-slate-900" x-text="order.symbol"></p>
+                                    <p class="text-xs text-slate-500" x-text="(order.type === 'buy' ? 'Aankoop' : 'Verkoop') + ' • ' + formatNumber(order.quantity) + ' • ' + (order.asset_type === 'crypto' ? 'Crypto' : 'Aandeel')"></p>
+                                    <p class="text-xs text-slate-400" x-text="formatDate(order.created_at)"></p>
                                 </div>
                             </div>
                             <div class="text-right">
-                                <p class="font-bold {{ $trade->type === 'buy' ? 'text-slate-700' : ($pnl >= 0 ? 'text-emerald-600' : 'text-red-600') }}">
-                                    {{ $trade->type === 'buy' ? '€ ' . number_format((float) $trade->total_value, 2, ',', '.') : (($pnl >= 0 ? '+' : '-') . '€ ' . number_format(abs($pnl), 2, ',', '.')) }}
-                                </p>
-                                <p class="text-xs text-slate-500">{{ $trade->created_at->diffForHumans() }}</p>
+                                <p class="font-bold text-slate-900" x-text="'€ ' + formatNumber(order.total_value)"></p>
+                                <p class="text-xs text-slate-500" x-text="'Prijs € ' + formatNumber(order.price_per_unit)"></p>
+                                <p x-show="order.type === 'sell'" class="text-xs font-semibold" :class="order.pnl >= 0 ? 'text-emerald-600' : 'text-red-600'" x-text="'W/V ' + (order.pnl >= 0 ? '+' : '') + '€ ' + formatNumber(order.pnl)"></p>
                             </div>
                         </div>
-                    @empty
-                        <div class="rounded-2xl border border-dashed border-slate-300 bg-slate-50 px-4 py-8 text-center">
-                            <p class="text-lg font-semibold text-slate-700">Nog geen trades</p>
-                            <p class="mt-1 text-sm text-slate-500">Je eerste koop- of verkooporder verschijnt hier.</p>
-                        </div>
-                    @endforelse
+                    </template>
+                    <div x-show="orders.length === 0 || filteredOrders.length === 0" class="rounded-2xl border border-dashed border-slate-300 bg-white px-4 py-8 text-center">
+                        <p class="text-lg font-semibold text-slate-700" x-text="orders.length === 0 ? 'Nog geen trades' : 'Geen orders gevonden'"></p>
+                        <p class="mt-1 text-sm text-slate-500" x-text="orders.length === 0 ? 'Je eerste koop- of verkooporder verschijnt hier.' : 'Pas je filters of datumbereik aan.'"></p>
+                    </div>
                 </div>
             </div>
         </div>
