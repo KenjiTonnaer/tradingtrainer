@@ -37,6 +37,20 @@
         $realizedPnl = round($sellTrades->sum(fn ($trade) => (float) ($trade->pnl ?? 0)), 2);
         $winningTrades = $sellTrades->filter(fn ($trade) => (float) ($trade->pnl ?? 0) > 0)->count();
         $winRate = $sellTrades->count() > 0 ? round(($winningTrades / $sellTrades->count()) * 100, 1) : 0;
+        $investedCapital = round($portfolioPositions->sum('total_invested'), 2);
+        $availableCapital = (float) ($user->wallet?->balance ?? 0);
+        $totalCapital = round($investedCapital + $availableCapital, 2);
+        $capitalExposure = $totalCapital > 0 ? round(($investedCapital / $totalCapital) * 100, 1) : 0;
+        $largestPosition = $portfolioPositions->sortByDesc('total_invested')->first();
+        $largestPositionExposure = $investedCapital > 0 && $largestPosition
+            ? round(((float) $largestPosition['total_invested'] / $investedCapital) * 100, 1)
+            : 0;
+        $exposureTone = $capitalExposure > 75 ? 'red' : ($capitalExposure > 50 ? 'amber' : 'emerald');
+        $exposureClasses = [
+            'emerald' => ['background' => 'bg-emerald-100', 'text' => 'text-emerald-600', 'bar' => 'bg-emerald-500'],
+            'amber' => ['background' => 'bg-amber-100', 'text' => 'text-amber-600', 'bar' => 'bg-amber-500'],
+            'red' => ['background' => 'bg-red-100', 'text' => 'text-red-600', 'bar' => 'bg-red-500'],
+        ][$exposureTone];
     @endphp
 
     <div class="flex h-full w-full flex-1 flex-col gap-6 bg-slate-100/70 p-6">
@@ -54,7 +68,7 @@
             </div>
         </div>
 
-        <div class="grid gap-6 md:grid-cols-3">
+        <div class="grid gap-6 md:grid-cols-2 xl:grid-cols-4">
             <div class="group overflow-hidden rounded-3xl border border-slate-200 bg-slate-50 p-6 shadow-[0_14px_30px_-20px_rgba(15,23,42,0.45)] transition-transform duration-200 hover:-translate-y-1">
                 <div class="mb-4 flex items-start justify-between">
                     <div>
@@ -104,6 +118,34 @@
                     </div>
                 </div>
                 <p class="text-sm {{ $realizedPnl >= 0 ? 'text-emerald-600' : 'text-red-600' }} font-semibold">{{ $realizedPnl >= 0 ? '+' : '' }}€ {{ number_format($realizedPnl, 2, ',', '.') }} gerealiseerd</p>
+            </div>
+
+            <div class="group overflow-hidden rounded-3xl border border-slate-200 bg-slate-50 p-6 shadow-[0_14px_30px_-20px_rgba(15,23,42,0.45)] transition-transform duration-200 hover:-translate-y-1">
+                <div class="mb-4 flex items-start justify-between">
+                    <div>
+                        <p class="text-sm font-medium text-slate-500">Kapitaalblootstelling</p>
+                        <h3 class="mt-2 text-3xl font-black text-slate-900">{{ number_format($capitalExposure, 1, ',', '.') }}%</h3>
+                    </div>
+                    <div class="flex h-12 w-12 items-center justify-center rounded-2xl {{ $exposureClasses['background'] }} {{ $exposureClasses['text'] }}">
+                        <svg class="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                            <path d="M4 19V5"/>
+                            <path d="M4 19h16"/>
+                            <path d="M8 16v-5"/>
+                            <path d="M12 16V8"/>
+                            <path d="M16 16v-3"/>
+                        </svg>
+                    </div>
+                </div>
+                <div class="mb-2 h-2 overflow-hidden rounded-full bg-slate-200">
+                    <div class="h-full rounded-full {{ $exposureClasses['bar'] }} transition-all" style="width: {{ min($capitalExposure, 100) }}%"></div>
+                </div>
+                <p class="text-sm text-slate-500">
+                    @if ($largestPosition)
+                        Grootste positie: {{ $largestPosition['symbol'] }} ({{ number_format($largestPositionExposure, 1, ',', '.') }}% van belegd vermogen)
+                    @else
+                        Nog geen kapitaal belegd.
+                    @endif
+                </p>
             </div>
         </div>
 
