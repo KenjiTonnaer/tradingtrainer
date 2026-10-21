@@ -25,3 +25,9 @@ test('simulation uses the selected timeframe and declares its source', function 
     expect($history['status'])->toBe('simulated')
         ->and(end($history['candles'])['time'] - $history['candles'][0]['time'])->toBe(86400);
 });
+
+test('an old provider timestamp remains visible but cannot execute', function () {
+    Http::fake(['*' => Http::response(['lastPrice' => '50000', 'closeTime' => now()->subHour()->getTimestampMs()])]);
+    $quote = app(MarketData::class)->quote('BTC');
+    expect($quote['price'])->toBe(50000.0)->and($quote['status'])->toBe('delayed')->and($quote['tradable'])->toBeFalse();
+});

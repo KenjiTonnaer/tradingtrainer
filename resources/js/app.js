@@ -1,554 +1,261 @@
-import { createChart } from 'lightweight-charts';
-// Expose LightweightCharts globally for inline scripts in Blade views
-import * as LightweightChartsAll from 'lightweight-charts';
-if (typeof window !== 'undefined') {
-	window.LightweightCharts = LightweightChartsAll;
+import { createChart, CandlestickSeries, LineSeries, HistogramSeries, ColorType } from 'lightweight-charts';
+
+const money = value => new Intl.NumberFormat('nl-NL', { style: 'currency', currency: 'EUR', maximumFractionDigits: 2 }).format(Number(value || 0));
+const number = (value, decimals = 2) => Number(value || 0).toLocaleString('nl-NL', { maximumFractionDigits: decimals });
+const statusLabel = status => ({live: 'Live', simulated: 'Gesimuleerd', delayed: 'Verouderd', unavailable: 'Niet beschikbaar', historical: 'Historisch'})[status] || 'Koers ophalen…';
+const uuid = () => {
+    if (globalThis.crypto.randomUUID) return globalThis.crypto.randomUUID();
+    const bytes = globalThis.crypto.getRandomValues(new Uint8Array(16));
+    bytes[6] = bytes[6] & 15 | 64; bytes[8] = bytes[8] & 63 | 128;
+    const hex = [...bytes].map(b => b.toString(16).padStart(2, '0')).join('');
+    return `${hex.slice(0,8)}-${hex.slice(8,12)}-${hex.slice(12,16)}-${hex.slice(16,20)}-${hex.slice(20)}`;
+};
+const readStored = (key, fallback) => { try { return JSON.parse(localStorage.getItem(key)) ?? fallback; } catch { return fallback; } };
+const writeStored = (key, value) => { try { localStorage.setItem(key, JSON.stringify(value)); } catch {} };
+async function api(url, method = 'GET', data) {
+    const response = await fetch(url, { method, headers: {Accept: 'application/json', 'Content-Type': 'application/json', 'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]')?.content || ''}, ...(data ? {body: JSON.stringify(data)} : {}) });
+    if (response.status === 401 || response.status === 419) throw Error('Je sessie is verlopen. Vernieuw de pagina en log opnieuw in.');
+    const body = await response.json();
+    if (!response.ok) throw Error(Object.values(body.errors || {}).flat()[0] || body.message || 'Dit verzoek kon niet worden verwerkt.');
+    return body;
 }
 
-const initializeStockCharts = () => {
-	document.querySelectorAll('[id^="stock-chart-"]').forEach((container) => {
-		const symbol = container.dataset.symbol;
-		const volumeContainer = document.getElementById(`volume-chart-${symbol}`);
-		if (!symbol || !volumeContainer) return;
-		if (container._stockChartData === container.dataset.candles) return;
-		container._stockChart?.remove();
-		volumeContainer._stockChart?.remove();
-
-		let initialData = [];
-		try {
-			initialData = JSON.parse(container.dataset.candles || '[]');
-		} catch (error) {
-			console.warn('Chart data could not be parsed:', error);
-			return;
-		}
-		const timeframe = container.dataset.timeframe || '1D';
-		const isIntraday = ['1m', '5m', '15m', '30m', '1h', '6h', '12h', '1D'].includes(timeframe);
-		const formatChartTime = (time) => {
-			const date = new Date(Number(time) * 1000);
-			return isIntraday
-				? date.toLocaleTimeString('nl-NL', { hour: '2-digit', minute: '2-digit' })
-				: date.toLocaleDateString('nl-NL', { day: '2-digit', month: 'short' });
-		};
-
-		const chart = createChart(container, {
-			layout: { background: { type: 'solid', color: '#ffffff' }, textColor: '#1f2937' },
-			grid: { vertLines: { color: '#f3f4f6' }, horzLines: { color: '#f3f4f6' } },
-			rightPriceScale: { borderColor: '#e5e7eb' },
-			localization: { timeFormatter: formatChartTime },
-			timeScale: {
-				borderColor: '#e5e7eb',
-				timeVisible: isIntraday,
-				secondsVisible: false,
-				tickMarkFormatter: formatChartTime,
-			},
-			width: container.clientWidth,
-			height: 500,
-		});
-		const chartType = localStorage.getItem('tradingtrainer-chart-type') || 'candles';
-		const candleSeries = chart.addSeries(LightweightChartsAll.CandlestickSeries, {
-			upColor: '#10b981', downColor: '#ef4444', borderVisible: false,
-			wickUpColor: '#10b981', wickDownColor: '#ef4444', visible: chartType !== 'line',
-		});
-		const lineSeries = chart.addSeries(LightweightChartsAll.LineSeries, {
-			color: '#7c3aed', lineWidth: 3, visible: chartType === 'line',
-		});
-
-		const volumeChart = createChart(volumeContainer, {
-			layout: { background: { type: 'solid', color: '#ffffff' }, textColor: '#1f2937' },
-			grid: { vertLines: { color: 'transparent' }, horzLines: { color: '#f3f4f6' } },
-			rightPriceScale: { borderColor: '#e5e7eb', scaleMargins: { top: 0.1, bottom: 0 } },
-			timeScale: { visible: false },
-			width: volumeContainer.clientWidth,
-			height: 120,
-		});
-		const volumeSeries = volumeChart.addSeries(LightweightChartsAll.HistogramSeries, {
-			color: '#6366f1', priceFormat: { type: 'volume' },
-		});
-		container._stockChart = chart;
-		container._stockChartData = container.dataset.candles;
-		volumeContainer._stockChart = volumeChart;
-
-		if (initialData.length) {
-			candleSeries.setData(initialData);
-			lineSeries.setData(initialData.map((item) => ({ time: item.time, value: item.close })));
-			volumeSeries.setData(initialData.map((item) => ({ time: item.time, value: item.volume ?? 0 })));
-			chart.timeScale().fitContent();
-		}
-
-		window.addEventListener('chart-type-change', (event) => {
-			const isLine = event.detail.type === 'line';
-			candleSeries.applyOptions({ visible: !isLine });
-			lineSeries.applyOptions({ visible: isLine });
-		});
-
-		let lastKnownPrice = initialData.length ? initialData[initialData.length - 1].close : 0;
-		const pollLatestPrice = async () => {
-			try {
-				const response = await fetch(`/markets/${symbol}/bars/latest`, {
-					headers: { Accept: 'application/json', 'X-Requested-With': 'XMLHttpRequest' },
-				});
-				if (!response.ok) return;
-				const data = await response.json();
-				const price = parseFloat(data.price ?? data.c ?? data.close ?? 0);
-				if (price > 0 && price !== lastKnownPrice) {
-					lastKnownPrice = price;
-					const time = Math.floor(Date.now() / 1000);
-					candleSeries.update({ time, open: price, high: price, low: price, close: price });
-					lineSeries.update({ time, value: price });
-					window.dispatchEvent(new CustomEvent('live-price-update', { detail: { symbol, price } }));
-				}
-			} catch (error) {
-				console.warn('Latest chart price failed:', error);
-			}
-		};
-
-		setInterval(pollLatestPrice, 10000);
-		new ResizeObserver(() => {
-			chart.applyOptions({ width: container.clientWidth });
-			volumeChart.applyOptions({ width: volumeContainer.clientWidth });
-		}).observe(container);
-	});
-};
-
-const registerTradingComponents = () => {
-	if (!window.Alpine) return;
-
-	window.Alpine.data('tradePanel', (symbol, initialPrice) => ({
-		symbol,
-		side: 'buy',
-		quantity: 1,
-		price: parseFloat(initialPrice) || 0,
-		livePrice: parseFloat(initialPrice) || 0,
-		availableQuantity: 0,
-		walletBalance: 0,
-		message: '',
-		isError: false,
-		loading: false,
-		inputMode: 'quantity',
-		orderKey: crypto.randomUUID(),
-		amountInput: '',
-
-		get total() {
-			return (parseFloat(this.quantity) || 0) * (parseFloat(this.price) || 0);
-		},
-
-		init() {
-			this.fetchWallet();
-			this.loadLatestPrice();
-			this.loadAvailableQuantity();
-			window.addEventListener('live-price-update', (event) => {
-				if (event.detail.symbol !== this.symbol) return;
-				this.livePrice = event.detail.price;
-				if (Math.abs(this.price - this.livePrice) < 0.01 || this.price === 0) {
-					this.price = this.livePrice;
-				}
-			});
-		},
-
-		setSide(side) {
-			this.side = side;
-			if (side === 'sell') this.setSellPercent(100);
-			if (side === 'buy' && this.quantity <= 0) this.quantity = 1;
-		},
-
-		get canSubmit() {
-			if (this.loading || this.quantity <= 0 || this.price <= 0) return false;
-			if (this.side === 'sell') return this.availableQuantity >= parseFloat(this.quantity);
-			return this.total <= this.walletBalance;
-		},
-
-		async loadLatestPrice() {
-			try {
-				const response = await fetch(`/markets/${this.symbol}/bars/latest`, {
-					headers: { Accept: 'application/json', 'X-Requested-With': 'XMLHttpRequest' },
-				});
-				if (!response.ok) return;
-				const data = await response.json();
-				const latestPrice = parseFloat(data.price ?? data.c ?? data.close ?? 0);
-				if (latestPrice > 0) {
-					this.livePrice = latestPrice;
-					this.price = latestPrice;
-				}
-			} catch (error) {
-				console.warn('Initial live price fetch failed:', error);
-			}
-		},
-
-		async loadAvailableQuantity() {
-			try {
-				const response = await fetch('/portfolio', {
-					headers: { Accept: 'application/json', 'X-Requested-With': 'XMLHttpRequest' },
-				});
-				if (!response.ok) return;
-				const positions = await response.json();
-				const position = positions.find((item) => item.symbol === this.symbol);
-				this.availableQuantity = position ? parseFloat(position.quantity) || 0 : 0;
-				if (this.side === 'sell') this.setSellPercent(100);
-			} catch (error) {
-				console.warn('Available quantity failed:', error);
-			}
-		},
-
-		minimumQuantity() {
-			return this.isCrypto() ? 0.000001 : 1;
-		},
-
-		setSellQuantity(quantity) {
-			this.quantity = this.isCrypto() ? parseFloat(quantity.toFixed(6)) : quantity;
-		},
-
-		setBuyQuantity(quantity) {
-			this.quantity = this.isCrypto() ? parseFloat(quantity.toFixed(6)) : quantity;
-		},
-
-		setSellPercent(percent) {
-			if (this.availableQuantity <= 0) {
-				this.quantity = 0;
-				return;
-			}
-			if (percent === 100) {
-				this.quantity = this.availableQuantity;
-				return;
-			}
-			const amount = this.availableQuantity * (percent / 100);
-			this.quantity = this.isCrypto()
-				? parseFloat(Math.max(this.minimumQuantity(), amount).toFixed(6))
-				: Math.max(this.minimumQuantity(), Math.floor(amount));
-		},
-
-		increment() {
-			const step = this.isCrypto() ? 0.001 : 1;
-			const decimals = this.isCrypto() ? 6 : 0;
-			this.quantity = parseFloat(((parseFloat(this.quantity) || 0) + step).toFixed(decimals));
-		},
-
-		decrement() {
-			const current = parseFloat(this.quantity) || 1;
-			this.quantity = Math.max(this.isCrypto() ? 0.000001 : 1, current - 1);
-		},
-
-		isCrypto() {
-			return ['BTC', 'ETH', 'SOL', 'DOGE', 'XRP', 'ADA', 'LINK', 'DOT', 'MATIC', 'LTC', 'AVAX']
-				.includes(this.symbol.toUpperCase());
-		},
-
-		fetchWallet() {
-			const element = document.querySelector('[data-wallet-balance]');
-			if (element) this.walletBalance = parseFloat(element.dataset.walletBalance) || 0;
-		},
-
-		setByPercent(percent) {
-			if (this.price <= 0 || this.walletBalance <= 0) return;
-			const rawQuantity = (this.walletBalance * (percent / 100)) / this.price;
-			const precision = 1000000;
-			const affordableQuantity = Math.floor(rawQuantity * precision) / precision;
-			this.quantity = percent === 100
-				? affordableQuantity
-				: (this.isCrypto() ? parseFloat(rawQuantity.toFixed(6)) : Math.floor(rawQuantity));
-			this.amountInput = (this.quantity * this.price).toFixed(2);
-		},
-
-		formatNumber(value) {
-			return Number(value || 0).toLocaleString('nl-NL', {
-				minimumFractionDigits: 2,
-				maximumFractionDigits: 2,
-			});
-		},
-
-		async submitOrder() {
-			if (!this.canSubmit) return;
-			this.loading = true;
-			this.message = '';
-			const endpoint = this.side === 'buy' ? '/trades/buy' : '/trades/sell';
-			try {
-				const response = await fetch(endpoint, {
-					method: 'POST',
-					headers: {
-						'Content-Type': 'application/json',
-						Accept: 'application/json',
-						'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]')?.content ?? '',
-						'X-Requested-With': 'XMLHttpRequest',
-					},
-					body: JSON.stringify({
-						order_key: this.orderKey,
-						symbol: this.symbol,
-						quantity: this.quantity,
-						price: this.price,
-						asset_type: this.isCrypto() ? 'crypto' : 'stock',
-					}),
-				});
-				const data = await response.json();
-				this.message = data.message ?? (response.ok ? 'Order uitgevoerd.' : 'Er ging iets mis.');
-				this.isError = !response.ok || !data.success;
-				if (!this.isError) {
-					this.orderKey = crypto.randomUUID();
-					this.quantity = 1;
-					this.price = this.livePrice;
-					if (data.wallet_balance !== undefined) this.walletBalance = parseFloat(data.wallet_balance);
-					window.dispatchEvent(new CustomEvent('trade-executed'));
-					this.loadAvailableQuantity();
-				}
-			} catch (error) {
-				this.message = `Netwerkfout: ${error.message}`;
-				this.isError = true;
-			} finally {
-				this.loading = false;
-				setTimeout(() => { this.message = ''; }, 5000);
-			}
-		},
-	}));
-
-	window.Alpine.data('portfolio', () => ({
-		positions: [],
-		livePrices: {},
-		loading: false,
-		pollTimer: null,
-		searchTerm: '',
-		assetFilter: 'all',
-
-		formatNumber(value) {
-			return Number(value || 0).toLocaleString('nl-NL', {
-				minimumFractionDigits: 2,
-				maximumFractionDigits: 2,
-			});
-		},
-
-		get filteredPositions() {
-			const search = this.searchTerm.trim().toLowerCase();
-
-			return this.positions.filter((position) => {
-				const matchesSearch = !search || position.symbol.toLowerCase().includes(search);
-				const matchesType = this.assetFilter === 'all' || position.asset_type === this.assetFilter;
-
-				return matchesSearch && matchesType;
-			});
-		},
-
-		init() {
-			this.load();
-			this.pollTimer = setInterval(() => this.fetchLivePrices(), 15000);
-			window.addEventListener('trade-executed', () => this.load());
-			window.addEventListener('live-price-update', (event) => {
-				if (event.detail.price > 0) this.livePrices[event.detail.symbol] = event.detail.price;
-			});
-		},
-
-		destroy() {
-			if (this.pollTimer) clearInterval(this.pollTimer);
-		},
-
-		async load() {
-			this.loading = true;
-			try {
-				const response = await fetch('/portfolio', {
-					headers: { Accept: 'application/json', 'X-Requested-With': 'XMLHttpRequest' },
-				});
-				if (response.ok) {
-					this.positions = await response.json();
-					await this.fetchLivePrices();
-				}
-			} catch (error) {
-				console.error('Portfolio load error:', error);
-			} finally {
-				this.loading = false;
-			}
-		},
-
-		async fetchLivePrices() {
-			for (const position of this.positions) {
-				try {
-					const response = await fetch(`/markets/${position.symbol}/bars/latest`, {
-						headers: { Accept: 'application/json', 'X-Requested-With': 'XMLHttpRequest' },
-					});
-					if (response.ok) {
-						const data = await response.json();
-						const price = parseFloat(data.price ?? data.c ?? data.close ?? 0);
-						if (price > 0) this.livePrices[position.symbol] = price;
-					}
-				} catch (error) {
-					console.warn('Live price failed for', position.symbol);
-				}
-			}
-		},
-	}));
-
-	window.Alpine.data('dashboardPortfolio', (positions) => ({
-		positions,
-		livePrices: {},
-		searchTerm: '',
-		assetFilter: 'all',
-		sortBy: 'symbol',
-
-		formatNumber(value) {
-			return Number(value || 0).toLocaleString('nl-NL', {
-				minimumFractionDigits: 2,
-				maximumFractionDigits: 2,
-			});
-		},
-
-		currentValue(position) {
-			return (parseFloat(position.quantity) || 0) * (this.livePrices[position.symbol] || 0);
-		},
-
-		pnl(position) {
-			return this.currentValue(position) - (parseFloat(position.total_invested) || 0);
-		},
-
-		get filteredPositions() {
-			const search = this.searchTerm.trim().toLowerCase();
-			const filtered = this.positions.filter((position) => {
-				return (!search || position.symbol.toLowerCase().includes(search))
-					&& (this.assetFilter === 'all' || position.asset_type === this.assetFilter);
-			});
-
-			return filtered.sort((left, right) => {
-				if (this.sortBy === 'value') return this.currentValue(right) - this.currentValue(left);
-				if (this.sortBy === 'pnl') return this.pnl(right) - this.pnl(left);
-				if (this.sortBy === 'symbol') return left.symbol.localeCompare(right.symbol);
-				return new Date(right.last_buy_at || 0) - new Date(left.last_buy_at || 0);
-			});
-		},
-
-		init() {
-			this.fetchLivePrices();
-			setInterval(() => this.fetchLivePrices(), 15000);
-		},
-
-		async fetchLivePrices() {
-			for (const position of this.positions) {
-				try {
-					const response = await fetch(`/markets/${position.symbol}/bars/latest`, {
-						headers: { Accept: 'application/json', 'X-Requested-With': 'XMLHttpRequest' },
-					});
-					if (response.ok) {
-						const data = await response.json();
-						const price = parseFloat(data.price ?? data.c ?? data.close ?? 0);
-						if (price > 0) this.livePrices[position.symbol] = price;
-					}
-				} catch (error) {
-					console.warn('Dashboard live price failed for', position.symbol);
-				}
-			}
-		},
-	}));
-
-	window.Alpine.data('dashboardOrders', (orders) => ({
-		orders,
-		searchTerm: '',
-		typeFilter: 'all',
-		assetFilter: 'all',
-		datePreset: 'all',
-		fromDate: '',
-		toDate: '',
-		sortBy: 'date-desc',
-
-		formatNumber(value) {
-			return Number(value || 0).toLocaleString('nl-NL', {
-				minimumFractionDigits: 2,
-				maximumFractionDigits: 2,
-			});
-		},
-
-		formatDate(value) {
-			return new Date(value).toLocaleString('nl-NL', {
-				dateStyle: 'medium',
-				timeStyle: 'short',
-			});
-		},
-
-		isInDateRange(order) {
-			const date = new Date(order.created_at);
-			const today = new Date();
-			let start = null;
-
-			if (this.datePreset === 'today') {
-				start = new Date(today.getFullYear(), today.getMonth(), today.getDate());
-			} else if (this.datePreset === '7d') {
-				start = new Date(today);
-				start.setDate(start.getDate() - 7);
-			} else if (this.datePreset === '30d') {
-				start = new Date(today);
-				start.setDate(start.getDate() - 30);
-			} else if (this.datePreset === 'custom' && this.fromDate) {
-				start = new Date(`${this.fromDate}T00:00:00`);
-			}
-
-			if (start && date < start) return false;
-			if (this.datePreset === 'custom' && this.toDate) {
-				const end = new Date(`${this.toDate}T23:59:59.999`);
-				if (date > end) return false;
-			}
-
-			return true;
-		},
-
-		get filteredOrders() {
-			const search = this.searchTerm.trim().toLowerCase();
-			const filtered = this.orders.filter((order) => {
-				return (!search || order.symbol.toLowerCase().includes(search))
-					&& (this.typeFilter === 'all' || order.type === this.typeFilter)
-					&& (this.assetFilter === 'all' || order.asset_type === this.assetFilter)
-					&& this.isInDateRange(order);
-			});
-
-			return filtered.sort((left, right) => {
-				if (this.sortBy === 'amount') return right.total_value - left.total_value;
-				if (this.sortBy === 'quantity') return right.quantity - left.quantity;
-				if (this.sortBy === 'symbol') return left.symbol.localeCompare(right.symbol);
-				const direction = this.sortBy === 'date-asc' ? 1 : -1;
-				return (new Date(left.created_at) - new Date(right.created_at)) * direction;
-			});
-		},
-	}));
-};
-
-document.addEventListener('alpine:init', registerTradingComponents);
-if (window.Alpine) registerTradingComponents();
-
-document.addEventListener('DOMContentLoaded', () => {
-	const el = document.getElementById('market-chart');
-	if (!el) return;
-
-	const symbol = el.dataset.symbol || 'AAPL';
-	const chart = createChart(el, { width: el.clientWidth || 800, height: 400, layout: { background: { type: 'solid', color: '#0f172a' }, textColor: '#fff' }, grid: { vertLines: { color: '#1e293b' }, horzLines: { color: '#1e293b' } } });
-	const lineSeries = chart.addSeries(LightweightChartsAll.LineSeries, { color: '#10b981', lineWidth: 2 });
-
-	const fetchSeries = async () => {
-		try {
-			const res = await fetch(`/api/markets/${symbol}/prices`);
-			if (!res.ok) return;
-			const json = await res.json();
-			if (Array.isArray(json.data)) {
-				lineSeries.setData(json.data);
-			}
-		} catch (e) {
-			console.error('Initial series fetch failed', e);
-		}
-	};
-
-	const pollLast = async () => {
-		try {
-			const res = await fetch(`/api/markets/${symbol}/prices`);
-			if (!res.ok) return;
-			const json = await res.json();
-			if (json.last) {
-				lineSeries.update(json.last);
-			}
-		} catch (e) {
-			console.error('Polling failed', e);
-		}
-	};
-
-	fetchSeries();
-	setInterval(pollLast, 3000);
+const charts = new Map();
+const chartOptions = element => ({
+    width: element.clientWidth, height: element.classList.contains('equity-chart') ? 240 : 400,
+    layout: {background: {type: ColorType.Solid, color: 'transparent'}, textColor: '#64748b', fontFamily: 'Inter, system-ui, sans-serif', attributionLogo: true},
+    grid: {vertLines: {color: document.documentElement.classList.contains('dark') ? '#243248' : '#f1f5f9'}, horzLines: {color: document.documentElement.classList.contains('dark') ? '#243248' : '#f1f5f9'}},
+    rightPriceScale: {borderVisible: false}, timeScale: {borderVisible: false, timeVisible: true, secondsVisible: false},
+    localization: {locale: 'nl-NL', priceFormatter: value => money(value)},
 });
+function destroyChart(element) {
+    const existing = charts.get(element);
+    if (!existing) return;
+    existing.observer.disconnect();
+    if (existing.quoteListener) element.removeEventListener('quote-update', existing.quoteListener);
+    existing.chart.remove(); charts.delete(element);
+}
+function drawChart(element, candles, type = 'candles') {
+    const signature = JSON.stringify(candles) + type;
+    if (charts.get(element)?.signature === signature) return;
+    destroyChart(element);
+    const chart = createChart(element, chartOptions(element));
+    const series = type === 'candles' ? chart.addSeries(CandlestickSeries, {upColor: '#0d9488', downColor: '#e11d48', wickUpColor: '#0d9488', wickDownColor: '#e11d48', borderVisible: false}) : chart.addSeries(LineSeries, {color: '#0f766e', lineWidth: 2, priceLineVisible: false});
+    if (candles.length) series.setData(type === 'candles' ? candles : candles.map(c => ({time: c.time, value: c.close})));
+    if (candles.some(c => c.volume > 0)) {
+        const volume = chart.addSeries(HistogramSeries, {priceScaleId: 'volume', priceFormat: {type: 'volume'}, priceLineVisible: false, lastValueVisible: false});
+        volume.priceScale().applyOptions({scaleMargins: {top: .85, bottom: 0}, visible: false});
+        chart.priceScale('right').applyOptions({scaleMargins: {top: .1, bottom: .2}});
+        volume.setData(candles.map(c => ({time: c.time, value: c.volume || 0, color: c.close >= c.open ? '#0d948855' : '#e11d4855'})));
+    }
+    chart.timeScale().fitContent();
+    const observer = new ResizeObserver(() => chart.applyOptions({width: element.clientWidth}));
+    observer.observe(element);
+    const state = {chart, series, observer, signature};
+    if (element.dataset.symbol && candles.length) {
+        let last = {...candles[candles.length - 1]};
+        state.quoteListener = event => {
+            const quote = event.detail;
+            if (!quote.tradable || !quote.price || !quote.as_of) return;
+            const step = { '1h': 60, '1D': 900, '30D': 86400, '6M': 86400, '1Y': 86400 }[element.dataset.range] || 900;
+            const time = Math.floor(new Date(quote.as_of).getTime() / 1000 / step) * step;
+            if (time < last.time) return;
+            last = time === last.time ? {...last, close: quote.price, high: Math.max(last.high, quote.price), low: Math.min(last.low, quote.price)} : {time, open: quote.price, high: quote.price, low: quote.price, close: quote.price};
+            series.update(type === 'candles' ? last : {time, value: quote.price});
+        };
+        element.addEventListener('quote-update', state.quoteListener);
+    }
+    charts.set(element, state);
+}
+function drawEquity(element, points) {
+    if (!element) return;
+    drawChart(element, points.map(p => ({time: p.date, close: Number(p.equity)})), 'line');
+}
+function initializeCharts() {
+    for (const element of charts.keys()) if (!element.isConnected) destroyChart(element);
+    document.querySelectorAll('[data-price-chart]').forEach(element => {
+        try { drawChart(element, JSON.parse(element.dataset.candles || '[]'), readStored('tt.chartType', 'candles')); } catch (e) { console.warn('Grafiek kon niet laden', e); }
+    });
+    document.querySelectorAll('[data-equity-chart]').forEach(element => {
+        if (!charts.has(element)) drawEquity(element, JSON.parse(element.dataset.points || '[]'));
+    });
+}
 
-document.addEventListener('DOMContentLoaded', initializeStockCharts);
-document.addEventListener('livewire:navigated', initializeStockCharts);
-document.addEventListener('livewire:morphed', initializeStockCharts);
-
-document.addEventListener('DOMContentLoaded', () => {
-	if (window.Livewire) {
-		window.Livewire.hook('morphed', () => requestAnimationFrame(initializeStockCharts));
-	}
-});
+function registerComponents() {
+    const Alpine = window.Alpine;
+    if (!Alpine || window.ttComponentsRegistered) return;
+    window.ttComponentsRegistered = true;
+    Alpine.data('tradeDesk', (symbol, quote, balance) => ({
+        symbol, quote, walletBalance: balance, side: 'buy', quantity: 1, availableQuantity: 0, position: null,
+        strategy: '', reason: '', stopLoss: '', takeProfit: '', protectionStop: '', protectionTake: '', riskPercent: 1,
+        loading: false, message: '', error: false, timer: null, refreshing: false, orderKey: uuid(), protectionActive: false,
+        chartType: readStored('tt.chartType', 'candles'), watchlist: readStored('tt.watchlist', ['AAPL', 'MSFT', 'BTC']),
+        money, number, statusLabel,
+        get total() { return Number(this.quantity || 0) * Number(this.quote.price || 0); },
+        get validStop() { return Number(this.stopLoss) > 0 && Number(this.stopLoss) < Number(this.quote.price); },
+        get risk() { return this.validStop ? (this.quote.price - Number(this.stopLoss)) * Number(this.quantity || 0) : 0; },
+        get canSubmit() { return !this.loading && this.quote.tradable && Number(this.quantity) > 0 && this.total >= .01 && (this.side === 'buy' ? this.total <= this.walletBalance : Number(this.quantity) <= this.availableQuantity); },
+        init() {
+            this.loadPosition();
+            this.timer = setInterval(() => this.refreshQuote(), 15000);
+            this.themeListener = () => this.$nextTick(initializeCharts);
+            window.addEventListener('tt-theme-change', this.themeListener);
+        },
+        destroy() { clearInterval(this.timer); window.removeEventListener('tt-theme-change', this.themeListener); },
+        toggleWatch() {
+            this.watchlist = this.watchlist.includes(this.symbol) ? this.watchlist.filter(s => s !== this.symbol) : [...this.watchlist, this.symbol];
+            writeStored('tt.watchlist', this.watchlist);
+        },
+        setChartType(type) {
+            this.chartType = type; writeStored('tt.chartType', type);
+            this.$root.querySelectorAll('[data-price-chart]').forEach(el => { destroyChart(el); });
+            initializeCharts();
+        },
+        async refreshQuote() {
+            if (this.refreshing) return;
+            this.refreshing = true;
+            try {
+                this.quote = await api(`/markets/${this.symbol}/bars/latest`);
+                this.$root.querySelector('[data-price-chart]')?.dispatchEvent(new CustomEvent('quote-update', {detail: this.quote}));
+                await this.loadPosition(false);
+            } catch { this.quote = {...this.quote, status: 'unavailable', tradable: false}; }
+            finally { this.refreshing = false; }
+        },
+        async loadPosition(syncProtection = true) {
+            try {
+                const state = await api('/account/state');
+                this.walletBalance = Number(state.cash);
+                this.protectionActive = state.protection_active;
+                this.position = state.positions.find(p => p.symbol === this.symbol) || null;
+                this.availableQuantity = Number(this.position?.quantity || 0);
+                if (syncProtection) { this.protectionStop = this.position?.stop_loss || ''; this.protectionTake = this.position?.take_profit || ''; }
+            } catch (e) { this.error = true; this.message = e.message; }
+        },
+        setPercent(pct) {
+            const raw = this.side === 'buy' ? this.walletBalance * pct / 100 / Number(this.quote.price || Infinity) : this.availableQuantity * pct / 100;
+            this.quantity = Math.floor(raw * 1000000) / 1000000;
+        },
+        sizeByRisk() {
+            if (!this.validStop || this.riskPercent <= 0 || this.riskPercent > 100) return;
+            const riskBudget = this.walletBalance * this.riskPercent / 100;
+            this.quantity = Math.floor(Math.min(riskBudget / (this.quote.price - this.stopLoss), this.walletBalance / this.quote.price) * 1000000) / 1000000;
+        },
+        async saveProtection() {
+            if (!this.position) return;
+            this.loading = true;
+            try {
+                await api(`/portfolio/${this.position.id}/protection`, 'PATCH', {stop_loss: this.protectionStop || null, take_profit: this.protectionTake || null});
+                await this.loadPosition(); this.error = false; this.message = 'Bescherming opgeslagen.';
+            } catch (e) { this.error = true; this.message = e.message; }
+            finally { this.loading = false; }
+        },
+        async submitOrder() {
+            if (!this.canSubmit) return;
+            this.loading = true; this.message = '';
+            try {
+                const data = await api(`/trades/${this.side}`, 'POST', {symbol: this.symbol, quantity: Number(this.quantity), order_key: this.orderKey,
+                    strategy: this.strategy || null, entry_reason: this.reason || null,
+                    stop_loss: this.side === 'buy' && this.stopLoss ? Number(this.stopLoss) : null,
+                    take_profit: this.side === 'buy' && this.takeProfit ? Number(this.takeProfit) : null});
+                this.orderKey = uuid(); this.walletBalance = Number(data.wallet_balance);
+                this.error = false; this.message = data.message + ' Uitvoering: ' + money(data.price);
+                await this.loadPosition(); await this.refreshQuote();
+            } catch (e) { this.error = true; this.message = e.message; }
+            finally { this.loading = false; }
+        },
+    }));
+    Alpine.data('accountOverview', (positions, cash, history) => ({
+        positions, cash, history, quotes: {}, search: '', asset: 'all', sort: 'symbol', timer: null, refreshing: false,
+        snapshotMessage: 'De grafiek bouwt vanaf nu op met accountwaarderingen. Historische punten worden niet verzonnen.', money, number, statusLabel,
+        get complete() { return this.positions.every(p => this.quotes[p.symbol]?.tradable && this.quotes[p.symbol]?.price > 0); },
+        value(p) { const q = this.quotes[p.symbol]; return q?.tradable && q.price > 0 ? Number(p.quantity) * q.price : null; },
+        get equity() { return Number(this.cash) + this.positions.reduce((sum, p) => sum + (this.value(p) || 0), 0); },
+        get unrealized() { return this.equity - this.cash - this.positions.reduce((sum, p) => sum + Number(p.total_invested), 0); },
+        get filtered() {
+            return this.positions.filter(p => p.symbol.toLowerCase().includes(this.search.toLowerCase()) && (this.asset === 'all' || p.asset_type === this.asset)).sort((a, b) => this.sort === 'value' ? (this.value(b) || 0) - (this.value(a) || 0) : this.sort === 'pnl' ? ((this.value(b) ?? b.total_invested) - b.total_invested) - ((this.value(a) ?? a.total_invested) - a.total_invested) : a.symbol.localeCompare(b.symbol));
+        },
+        init() { this.refresh(); this.timer = setInterval(() => this.refresh(), 30000); },
+        destroy() { clearInterval(this.timer); },
+        async refresh() {
+            if (this.refreshing) return;
+            this.refreshing = true;
+            try {
+                const state = await api('/account/state'); this.positions = state.positions; this.cash = Number(state.cash);
+                await Promise.all(this.positions.map(async p => {
+                    try { this.quotes[p.symbol] = await api(`/markets/${p.symbol}/bars/latest`); }
+                    catch { this.quotes[p.symbol] = {status: 'unavailable', tradable: false}; }
+                }));
+                if (this.complete) {
+                    const result = await api('/account/snapshot', 'POST', {});
+                    if (result.complete) {
+                        this.history = result.history; drawEquity(this.$root.querySelector('[data-equity-chart]'), result.history);
+                        this.snapshotMessage = result.history.length < 2 ? 'Eerste dagsnapshot opgeslagen. Vanaf de volgende dag ontstaat je vermogenslijn.' : 'Dagelijkse accountwaarderingen. Simulatiekoersen tellen als oefenwaardering.';
+                    } else this.snapshotMessage = result.message;
+                } else this.snapshotMessage = 'Geen complete actuele waardering. Er wordt geen misleidend punt aan de grafiek toegevoegd.';
+            } catch (e) { this.snapshotMessage = e.message; }
+            finally { this.refreshing = false; }
+        },
+    }));
+    Alpine.data('replayStudio', () => ({
+        mode: 'scenario', scenario: 'trend', symbol: 'BTC', date: '', session: null,
+        orderKey: uuid(),
+        quantity: 1, stopLoss: '', takeProfit: '', reason: '', evaluation: '', message: '', busy: false, saved: false,
+        money, number, uuid,
+        init() { this.themeListener = () => { if (this.session) this.$nextTick(() => this.draw()); }; window.addEventListener('tt-theme-change', this.themeListener); },
+        async start() {
+            if (this.busy) return;
+            this.busy = true; this.message = '';
+            try {
+                this.session = await api('/replay', 'POST', {mode: this.mode, scenario: this.scenario, ...(this.mode === 'historical' ? {symbol: this.symbol, date: this.date} : {})});
+                this.evaluation = ''; this.saved = false; this.reason = ''; this.stopLoss = ''; this.takeProfit = ''; this.orderKey = uuid();
+                this.$nextTick(() => this.draw());
+            } catch (e) { this.message = e.message; }
+            finally { this.busy = false; }
+        },
+        async resume(id) {
+            if (this.busy) return;
+            this.busy = true; this.message = '';
+            try { this.session = await api(`/replay/${id}`); this.orderKey = uuid(); this.evaluation = this.session.evaluation || ''; this.$nextTick(() => this.draw()); }
+            catch (e) { this.message = e.message; }
+            finally { this.busy = false; }
+        },
+        draw() { const el = this.$root.querySelector('[data-replay-chart]'); if (el) drawChart(el, this.session.candles); },
+        destroy() { const el = this.$root.querySelector('[data-replay-chart]'); if (el) destroyChart(el); window.removeEventListener('tt-theme-change', this.themeListener); },
+        orderInput() { return {quantity: Number(this.quantity), stop_loss: this.stopLoss ? Number(this.stopLoss) : null, take_profit: this.takeProfit ? Number(this.takeProfit) : null, reason: this.reason, request_id: this.orderKey}; },
+        sizeByRisk() {
+            const stop = Number(this.stopLoss); const price = this.session.price;
+            if (stop <= 0 || stop >= price) {this.message = 'Vul een stop onder de huidige koers in.'; return;}
+            const maxValue = Math.max(0, this.session.equity * .2 - this.session.quantity * price);
+            this.quantity = Math.floor(Math.min(this.session.equity * .01 / (price - stop), maxValue / price, this.session.cash / price) * 1000000) / 1000000;
+        },
+        async act(action, data = {}) {
+            if (this.busy || !this.session) return;
+            this.busy = true; this.message = ''; this.saved = false;
+            try {
+                this.session = await api(`/replay/${this.session.id}`, 'PATCH', {action, cursor: this.session.cursor, ...data});
+                if (['buy', 'sell'].includes(action)) this.orderKey = uuid();
+                this.evaluation = this.session.evaluation || this.evaluation;
+                if (action === 'evaluate') this.saved = true;
+                this.$nextTick(() => this.draw());
+            } catch (e) {this.message = e.message;}
+            finally {this.busy = false;}
+        },
+    }));
+}
+document.addEventListener('alpine:init', registerComponents);
+registerComponents();
+document.addEventListener('DOMContentLoaded', initializeCharts);
+document.addEventListener('livewire:navigated', initializeCharts);
+document.addEventListener('livewire:navigating', () => {for (const element of [...charts.keys()]) destroyChart(element);});
+const setupLivewire = () => {
+    if (!window.Livewire || window.ttChartHookRegistered) return;
+    window.ttChartHookRegistered = true;
+    window.Livewire.hook('morphed', () => requestAnimationFrame(initializeCharts));
+};
+document.addEventListener('livewire:initialized', setupLivewire);
+setupLivewire();
+new MutationObserver(() => {
+    for (const element of [...charts.keys()]) destroyChart(element);
+    initializeCharts();
+    window.dispatchEvent(new CustomEvent('tt-theme-change'));
+}).observe(document.documentElement, {attributes: true, attributeFilter: ['class']});

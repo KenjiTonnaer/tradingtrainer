@@ -20,6 +20,7 @@ class MarketData
         if (! in_array($symbol, $this->symbols(), true)) {
             throw ValidationException::withMessages(['symbol' => 'Kies een ondersteund instrument.']);
         }
+
         return $symbol;
     }
 
@@ -37,9 +38,10 @@ class MarketData
     public function quote(string $symbol): array
     {
         $symbol = $this->symbol($symbol);
+
         return Cache::remember('quote:v2:'.config('trading.mode').':'.$symbol, 10, function () use ($symbol) {
             if ($this->simulated($symbol)) {
-                return ['symbol' => $symbol, 'price' => $this->simulationPrice($symbol, intdiv(time(), 60)),
+                return ['symbol' => $symbol, 'price' => $this->simulationPrice($symbol, intdiv(now()->timestamp, 60)),
                     'currency' => 'EUR', 'source' => 'Oefensimulatie', 'status' => 'simulated',
                     'as_of' => now()->toISOString(), 'tradable' => true];
             }
@@ -58,8 +60,11 @@ class MarketData
                     $extra = ['original_price' => (float) $data['p'], 'original_currency' => 'USD', 'fx_rate' => $fx['rate'], 'fx_date' => $fx['date']];
                     $source = 'Alpaca IEX · USD → EUR (dagkoers)';
                 }
-                if (! is_finite($price) || $price <= 0) throw new \RuntimeException('Invalid quote');
+                if (! is_finite($price) || $price <= 0) {
+                    throw new \RuntimeException('Invalid quote');
+                }
                 $fresh = $at->between(now()->subMinutes(3), now()->addMinute());
+
                 return array_merge(['symbol' => $symbol, 'price' => $price, 'currency' => 'EUR', 'source' => $source,
                     'status' => $fresh ? 'live' : 'delayed', 'as_of' => $at->toISOString(), 'tradable' => $fresh], $extra);
             } catch (\Throwable $e) {
@@ -74,7 +79,10 @@ class MarketData
         return Cache::remember('fx:usd-eur:v1', 3600, function () {
             $data = Http::timeout(6)->get('https://api.frankfurter.dev/v1/latest', ['base' => 'USD', 'symbols' => 'EUR'])->throw()->json();
             $rate = (float) ($data['rates']['EUR'] ?? 0);
-            if ($rate <= 0 || Carbon::parse($data['date'])->lt(now()->subDays(7))) throw new \RuntimeException('Wisselkoers niet beschikbaar.');
+            if ($rate <= 0 || Carbon::parse($data['date'])->lt(now()->subDays(7))) {
+                throw new \RuntimeException('Wisselkoers niet beschikbaar.');
+            }
+
             return ['rate' => $rate, 'date' => $data['date']];
         });
     }
@@ -87,15 +95,19 @@ class MarketData
         $end = $date ? Carbon::parse($date, 'UTC')->endOfDay() : now('UTC');
         $start = $date ? Carbon::parse($date, 'UTC')->startOfDay() : $end->copy()->subMinutes($lookback);
         if ($this->simulated($symbol)) {
-            if ($date) return ['candles' => [], 'source' => 'Geen historische provider ingesteld', 'status' => 'unavailable'];
+            if ($date) {
+                return ['candles' => [], 'source' => 'Geen historische provider ingesteld', 'status' => 'unavailable'];
+            }
             $candles = [];
             for ($minute = intdiv($start->timestamp, 60); $minute <= intdiv($end->timestamp, 60); $minute += $step) {
                 $open = $this->simulationPrice($symbol, $minute - $step);
                 $close = $this->simulationPrice($symbol, $minute);
                 $candles[] = ['time' => $minute * 60, 'open' => $open, 'close' => $close, 'high' => max($open, $close) * 1.001, 'low' => min($open, $close) * .999, 'volume' => 0];
             }
+
             return ['candles' => $candles, 'source' => 'Oefensimulatie · EUR', 'status' => 'simulated'];
         }
+
         return Cache::remember('history:v2:'.$symbol.':'.$range.':'.$date, $date ? 86400 : 60, function () use ($symbol, $start, $end, $tf, $interval) {
             try {
                 if ($this->isCrypto($symbol)) {
@@ -109,6 +121,7 @@ class MarketData
                     $source = 'Alpaca IEX · omgerekend met huidige EUR-dagkoers';
                 }
                 usort($candles, fn ($a, $b) => $a['time'] <=> $b['time']);
+
                 return ['candles' => $candles, 'source' => $source, 'status' => 'historical'];
             } catch (\Throwable $e) {
                 return ['candles' => [], 'source' => 'Marktdata tijdelijk niet beschikbaar', 'status' => 'unavailable'];
@@ -125,6 +138,7 @@ class MarketData
     {
         $base = ['AAPL' => 180, 'MSFT' => 390, 'NVDA' => 115, 'TSLA' => 235, 'BTC' => 58000, 'ETH' => 2800, 'SOL' => 130][$symbol] ?? 100;
         $seed = crc32($symbol) % 1000;
+
         return round($base * (1 + .025 * sin($minute / 80 + $seed) + .008 * sin($minute / 9 + $seed)), 4);
     }
 }
