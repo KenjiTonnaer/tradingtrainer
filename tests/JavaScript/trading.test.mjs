@@ -13,6 +13,41 @@ const root = {querySelector() {return null;}, querySelectorAll() {return [];}};
 const component = (name, ...args) => Object.assign(factories.get(name)(...args), {$root: root, $nextTick(fn) {fn();}});
 const quote = {price: 100, tradable: true, status: 'simulated', as_of: new Date().toISOString()};
 
+test('sidebar preference survives navigation while the mobile menu starts closed', () => {
+    const previousStorage = globalThis.localStorage;
+    const values = new Map();
+    globalThis.localStorage = {getItem: key => values.get(key) ?? null, setItem: (key, value) => values.set(key, value)};
+    try {
+        const shell = component('workspaceShell');
+        assert.equal(shell.sidebarCollapsed, false);
+        shell.toggleSidebar();
+        const nextPage = component('workspaceShell');
+        assert.equal(nextPage.sidebarCollapsed, true);
+        assert.equal(nextPage.menuOpen, false);
+        nextPage.toggleSidebar();
+        assert.equal(component('workspaceShell').sidebarCollapsed, false);
+    } finally {
+        if (previousStorage === undefined) delete globalThis.localStorage;
+        else globalThis.localStorage = previousStorage;
+    }
+});
+
+test('sidebar remains usable when browser storage is unavailable', () => {
+    const previousStorage = globalThis.localStorage;
+    globalThis.localStorage = {getItem() {throw Error('Storage blocked');}, setItem() {throw Error('Storage blocked');}};
+    try {
+        const shell = component('workspaceShell');
+        assert.equal(shell.sidebarCollapsed, false);
+        shell.toggleSidebar();
+        assert.equal(shell.sidebarCollapsed, true);
+        shell.toggleSidebar();
+        assert.equal(shell.sidebarCollapsed, false);
+    } finally {
+        if (previousStorage === undefined) delete globalThis.localStorage;
+        else globalThis.localStorage = previousStorage;
+    }
+});
+
 test('public demo advances only within its fictional data without submitting requests', () => {
     const candles = Array.from({length: 20}, (_, index) => ({open: 170, close: 170 + index, high: 191, low: 169}));
     const demo = component('landingDemo', candles);

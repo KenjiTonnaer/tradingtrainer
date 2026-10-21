@@ -86,6 +86,14 @@ function registerComponents() {
     const Alpine = window.Alpine;
     if (!Alpine || window.ttComponentsRegistered) return;
     window.ttComponentsRegistered = true;
+    Alpine.data('workspaceShell', () => ({
+        menuOpen: false,
+        sidebarCollapsed: readStored('tt.sidebarCollapsed', false) === true,
+        toggleSidebar() {
+            this.sidebarCollapsed = !this.sidebarCollapsed;
+            writeStored('tt.sidebarCollapsed', this.sidebarCollapsed);
+        },
+    }));
     Alpine.data('landingDemo', (candles) => ({
         candles, cursor: Math.min(17, candles.length - 1), chartType: 'candles', playing: false, timer: null,
         money,
