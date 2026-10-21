@@ -44,8 +44,8 @@
 .app-sidebar .brand-wordmark small { margin-top: 5px; color: #b1b1b1; font-family: var(--font-sans); font-size: 11px; letter-spacing: .1px; text-transform: none; }
 .sidebar-section-heading { display: flex; align-items: center; justify-content: space-between; gap: 10px; margin: 30px 4px 12px; }
 .sidebar-caption { margin: 0 10px; color: #ababab; font-size: 12px; font-weight: 500; }
-.sidebar-collapse-toggle { display: grid; place-items: center; width: 36px; height: 36px; border: 1px solid #484848; border-radius: 6px; color: #cecece; }
-.sidebar-collapse-toggle:hover { color: #fff; background: #303030; }
+.sidebar-collapse-toggle { display: grid; place-items: center; width: 36px; height: 36px; border: 1px solid var(--tt-button-border); border-radius: 6px; color: var(--tt-button-text); background: var(--tt-button-surface); }
+.sidebar-collapse-toggle:hover { background: var(--tt-button-hover); }
 .sidebar-collapse-toggle > svg { width: 18px; height: 18px; }
 .sidebar-collapse-toggle > svg.points-right { transform: rotate(180deg); }
 .sidebar-nav { display: grid; gap: 6px; }
@@ -123,8 +123,9 @@
 .quote-strip { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; margin-bottom: 18px; color: var(--tt-muted); font-family: var(--font-sans); font-size: 12px; line-height: 1.7; }
 .chart-toolbar { display: flex; justify-content: space-between; gap: 12px; flex-wrap: wrap; margin-top: 22px; padding: 18px 0; border-top: 1px solid var(--tt-line); }
 .segmented { display: inline-flex; gap: 3px; padding: 4px; border-radius: 7px; background: var(--tt-soft); }
-.segmented button { flex: 1; min-height: 36px; padding: 7px 12px; border-radius: 5px; color: var(--tt-muted); font-family: var(--font-sans); font-size: 13px; font-weight: 500; }
-.segmented button.selected { color: var(--tt-text); background: var(--tt-surface); box-shadow: 0 1px 3px #00000012; }
+.segmented button { flex: 1; min-height: 36px; padding: 7px 12px; border: 1px solid var(--tt-button-border); border-radius: 5px; color: var(--tt-button-text); background: var(--tt-button-surface); font-family: var(--font-sans); font-size: 13px; font-weight: 500; }
+.segmented button:hover:not(:disabled) { background: var(--tt-button-hover); }
+.segmented button.selected { border-color: #a96534; color: var(--tt-button-text); background: var(--tt-button-primary); box-shadow: inset 0 -2px #80502c; }
 .price-chart { width: 100%; height: 400px; }
 .order-panel { position: sticky; top: 24px; }
 .order-panel > * + * { margin-top: 20px; }
@@ -189,7 +190,8 @@
     .app-sidebar.is-open { transform: translateX(0); visibility: visible; }
     .workspace-content { margin-left: 0; }
     .sidebar-close { display: grid; place-items: center; flex-shrink: 0; width: 38px; height: 38px; color: #eee; font-size: 27px; line-height: 1; }
-    .menu-toggle { display: grid; place-items: center; width: 42px; height: 42px; border: 1px solid var(--tt-line); border-radius: 6px; color: var(--tt-text); font-size: 19px; }
+    .menu-toggle { display: grid; place-items: center; width: 42px; height: 42px; border: 1px solid var(--tt-button-border); border-radius: 6px; color: var(--tt-button-text); background: var(--tt-button-surface); font-size: 19px; }
+    .menu-toggle:hover { background: var(--tt-button-hover); }
     .sidebar-backdrop { position: fixed; inset: 0; z-index: 50; display: block; background: #0007; }
     .app-body.navigation-open { overflow: hidden; }
     .workspace-header { min-height: 72px; padding: 14px 24px; }
