@@ -1,6 +1,6 @@
 <x-layouts.auth>
     <div class="flex flex-col gap-6">
-        <x-auth-header :title="__('Welcome Back')" :description="__('Sign in to continue your trading journey')" />
+        <x-auth-header :title="__('Welkom terug')" :description="__('Log in op je oefenrekening.')" />
 
         <!-- Session Status -->
         <x-auth-session-status class="text-center" :status="session('status')" />
@@ -36,7 +36,7 @@
                 />
 
                 @if (Route::has('password.request'))
-                    <flux:link class="absolute top-0 text-sm end-0 text-purple-600 hover:text-pink-500 transition-colors" :href="route('password.request')" wire:navigate>
+                    <flux:link class="absolute top-0 text-sm end-0 text-link" :href="route('password.request')" wire:navigate>
                         {{ __('Wachtwoord vergeten?') }}
                     </flux:link>
                 @endif
@@ -53,9 +53,9 @@
         </form>
 
         @if (Route::has('register'))
-            <div class="space-x-1 text-sm text-center rtl:space-x-reverse text-gray-600">
+            <div class="space-x-1 text-sm text-center rtl:space-x-reverse muted">
                 <span>{{ __('Nog geen account?') }}</span>
-                <flux:link :href="route('register')" wire:navigate class="text-purple-600 hover:text-pink-500 font-semibold transition-colors">{{ __('Registreer nu') }}</flux:link>
+                <flux:link :href="route('register')" wire:navigate class="text-link">{{ __('Registreer nu') }}</flux:link>
             </div>
         @endif
     </div>
