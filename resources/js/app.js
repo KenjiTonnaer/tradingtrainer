@@ -1,8 +1,9 @@
 import { createChart, CandlestickSeries, LineSeries, HistogramSeries, ColorType } from 'lightweight-charts';
+import { resultClass, price, signedMoney, candleDirection, candleReadout } from './market-presentation.js';
 
 const money = value => new Intl.NumberFormat('nl-NL', { style: 'currency', currency: 'EUR', maximumFractionDigits: 2 }).format(Number(value || 0));
 const number = (value, decimals = 2) => Number(value || 0).toLocaleString('nl-NL', { maximumFractionDigits: decimals });
-const statusLabel = status => ({live: 'Live', simulated: 'Gesimuleerd', delayed: 'Verouderd', unavailable: 'Niet beschikbaar', historical: 'Historisch'})[status] || 'Koers ophalen…';
+const statusLabel = status => ({live: 'Actuele marktkoers', simulated: 'Simulatie', delayed: 'Verouderde koers', unavailable: 'Niet beschikbaar', historical: 'Historisch'})[status] || 'Koers ophalen…';
 const uuid = () => {
     if (globalThis.crypto.randomUUID) return globalThis.crypto.randomUUID();
     const bytes = globalThis.crypto.getRandomValues(new Uint8Array(16));
@@ -25,8 +26,8 @@ const chartOptions = element => ({
     width: element.clientWidth, height: element.classList.contains('equity-chart') ? 240 : 400,
     layout: {background: {type: ColorType.Solid, color: 'transparent'}, textColor: document.documentElement.classList.contains('dark') ? '#b9b5af' : '#65615c', fontFamily: 'IBM Plex Sans, sans-serif', fontSize: 13, attributionLogo: true},
     grid: {vertLines: {color: document.documentElement.classList.contains('dark') ? '#363636' : '#e9e5db'}, horzLines: {color: document.documentElement.classList.contains('dark') ? '#363636' : '#e9e5db'}},
-    rightPriceScale: {borderVisible: false}, timeScale: {borderVisible: false, timeVisible: true, secondsVisible: false},
-    localization: {locale: 'nl-NL', priceFormatter: value => money(value)},
+    rightPriceScale: {borderVisible: false}, timeScale: {borderVisible: false, timeVisible: !['30D', '6M', '1Y'].includes(element.dataset.range), secondsVisible: false},
+    localization: {locale: 'nl-NL', priceFormatter: element.classList.contains('equity-chart') ? money : price},
 });
 function destroyChart(element) {
     const existing = charts.get(element);
@@ -40,14 +41,23 @@ function drawChart(element, candles, type = 'candles') {
     if (charts.get(element)?.signature === signature) return;
     destroyChart(element);
     const chart = createChart(element, chartOptions(element));
-    const bullishColor = document.documentElement.classList.contains('dark') ? '#e3ddd3' : '#8f5737';
-    const series = type === 'candles' ? chart.addSeries(CandlestickSeries, {upColor: bullishColor, downColor: '#c76b70', wickUpColor: bullishColor, wickDownColor: '#c76b70', borderVisible: false}) : chart.addSeries(LineSeries, {color: '#ce793f', lineWidth: 2, priceLineVisible: false});
-    if (candles.length) series.setData(type === 'candles' ? candles : candles.map(c => ({time: c.time, value: c.close})));
+    const styles = getComputedStyle(element);
+    const colors = Object.fromEntries(['up', 'down', 'flat', 'line'].map(key => [key, styles.getPropertyValue(`--tt-chart-${key}`).trim()]));
+    const priceFormat = {type: 'price', precision: element.classList.contains('equity-chart') ? 2 : 4, minMove: element.classList.contains('equity-chart') ? .01 : .0001};
+    const series = type === 'candles' ? chart.addSeries(CandlestickSeries, {upColor: colors.up, downColor: colors.down, wickUpColor: colors.up, wickDownColor: colors.down, borderVisible: false, priceFormat}) : chart.addSeries(LineSeries, {color: colors.line, lineWidth: 2, priceLineVisible: false, priceFormat});
+    const seriesCandle = candle => candleDirection(candle) === 'flat' ? {...candle, color: colors.flat, wickColor: colors.flat} : candle;
+    if (candles.length) series.setData(type === 'candles' ? candles.map(seriesCandle) : candles.map(c => ({time: c.time, value: c.close})));
+    const readout = element.parentElement?.querySelector('[data-chart-readout]');
+    const candleByTime = new Map(candles.map(c => [c.time, c]));
+    let latest = candles.at(-1), hoveredTime = null;
+    const updateReadout = () => { if (readout) readout.textContent = candleReadout(candleByTime.get(hoveredTime) || latest); };
+    updateReadout();
+    if (readout) chart.subscribeCrosshairMove(event => { hoveredTime = event.time ?? null; updateReadout(); });
     if (candles.some(c => c.volume > 0)) {
         const volume = chart.addSeries(HistogramSeries, {priceScaleId: 'volume', priceFormat: {type: 'volume'}, priceLineVisible: false, lastValueVisible: false});
         volume.priceScale().applyOptions({scaleMargins: {top: .85, bottom: 0}, visible: false});
         chart.priceScale('right').applyOptions({scaleMargins: {top: .1, bottom: .2}});
-        volume.setData(candles.map(c => ({time: c.time, value: c.volume || 0, color: c.close >= c.open ? `${bullishColor}55` : '#c76b7055'})));
+        volume.setData(candles.map(c => ({time: c.time, value: c.volume || 0, color: `${colors[candleDirection(c)]}66`})));
     }
     chart.timeScale().fitContent();
     const observer = new ResizeObserver(() => chart.applyOptions({width: element.clientWidth}));
@@ -62,7 +72,8 @@ function drawChart(element, candles, type = 'candles') {
             const time = Math.floor(new Date(quote.as_of).getTime() / 1000 / step) * step;
             if (time < last.time) return;
             last = time === last.time ? {...last, close: quote.price, high: Math.max(last.high, quote.price), low: Math.min(last.low, quote.price)} : {time, open: quote.price, high: quote.price, low: quote.price, close: quote.price};
-            series.update(type === 'candles' ? last : {time, value: quote.price});
+            latest = last; candleByTime.set(time, last); updateReadout();
+            series.update(type === 'candles' ? seriesCandle(last) : {time, value: quote.price});
         };
         element.addEventListener('quote-update', state.quoteListener);
     }
@@ -96,7 +107,7 @@ function registerComponents() {
     }));
     Alpine.data('landingDemo', (candles) => ({
         candles, cursor: Math.min(17, candles.length - 1), chartType: 'candles', playing: false, timer: null,
-        money,
+        money, price, candleReadout,
         get current() { return this.candles[this.cursor]; },
         get linePath() {
             return this.candles.slice(0, this.cursor + 1).map((candle, index) => `${index === 0 ? 'M' : 'L'}${45 + index * 24},${320 - (candle.close - 168) * 10}`).join(' ');
@@ -120,7 +131,7 @@ function registerComponents() {
         strategy: '', reason: '', stopLoss: '', takeProfit: '', protectionStop: '', protectionTake: '', riskPercent: 1,
         loading: false, message: '', error: false, timer: null, refreshing: false, orderKey: uuid(), protectionActive: false,
         chartType: readStored('tt.chartType', 'candles'), watchlist: readStored('tt.watchlist', ['AAPL', 'MSFT', 'BTC']),
-        money, number, statusLabel,
+        money, number, statusLabel, price,
         get total() { return Number(this.quantity || 0) * Number(this.quote.price || 0); },
         get validStop() { return Number(this.stopLoss) > 0 && Number(this.stopLoss) < Number(this.quote.price); },
         get risk() { return this.validStop ? (this.quote.price - Number(this.stopLoss)) * Number(this.quantity || 0) : 0; },
@@ -196,7 +207,7 @@ function registerComponents() {
     }));
     Alpine.data('accountOverview', (positions, cash, history) => ({
         positions, cash, history, quotes: {}, search: '', asset: 'all', sort: 'symbol', timer: null, refreshing: false,
-        snapshotMessage: 'De grafiek bouwt vanaf nu op met accountwaarderingen. Historische punten worden niet verzonnen.', money, number, statusLabel,
+        snapshotMessage: 'De grafiek bouwt vanaf nu op met accountwaarderingen. Historische punten worden niet verzonnen.', money, number, statusLabel, resultClass, signedMoney,
         get complete() { return this.positions.every(p => this.quotes[p.symbol]?.tradable && this.quotes[p.symbol]?.price > 0); },
         value(p) { const q = this.quotes[p.symbol]; return q?.tradable && q.price > 0 ? Number(p.quantity) * q.price : null; },
         get equity() { return Number(this.cash) + this.positions.reduce((sum, p) => sum + (this.value(p) || 0), 0); },
@@ -230,7 +241,7 @@ function registerComponents() {
         mode: 'scenario', scenario: 'trend', symbol: 'BTC', date: '', session: null,
         orderKey: uuid(),
         quantity: 1, stopLoss: '', takeProfit: '', reason: '', evaluation: '', message: '', busy: false, saved: false,
-        money, number, uuid,
+        money, number, uuid, price, resultClass, signedMoney,
         init() { this.themeListener = () => { if (this.session) this.$nextTick(() => this.draw()); }; window.addEventListener('tt-theme-change', this.themeListener); },
         async start() {
             if (this.busy) return;

@@ -18,7 +18,7 @@
         <div class="hero-kicker"><span class="orange-square" aria-hidden="true"></span> THE PRACTICE DESK <span>VOOR JE EERSTE ÉN JE VOLGENDE TRADE</span></div>
         <h1>De markt wacht niet.<br><span>Jij kunt wél oefenen.</span></h1>
         <div class="hero-intro">
-            <p>Niet elke trade wordt winst. Elke trade kan een les worden.<br>Ontwikkel je aanpak met virtueel geld, een handelsplan en de ruimte om opnieuw te beginnen.</p>
+            <p>Niet elke trade wordt winst. Elke trade kan een les worden.<br> Ontwikkel je aanpak met virtueel geld, een handelsplan en de ruimte om opnieuw te beginnen.</p>
             <a href="{{ auth()->check() ? route('markets.show', 'AAPL') : route('register') }}" class="button primary hero-cta">Neem plaats aan je handelsdesk <span aria-hidden="true">→</span></a>
         </div>
     </section>
@@ -29,9 +29,11 @@
             <div class="terminal-content">
                 <div class="demo-market">
                     <div class="demo-market-heading"><div><span class="mono-label">AAPL / VOORBEELDSCENARIO</span><div class="demo-price"><span x-text="money(current.close)">€ 182,60</span><small>EUR</small></div></div><div class="demo-chart-types" role="group" aria-label="Grafiektype"><button @click="chartType = 'candles'" :aria-pressed="chartType === 'candles'">Kaarsen</button><button @click="chartType = 'line'" :aria-pressed="chartType === 'line'">Lijn</button></div></div>
+                    <x-chart-legend />
+                    <p class="chart-readout" x-text="candleReadout(current)" aria-label="Candlewaarden"></p>
                     <div class="demo-chart-scroll">
                         <svg class="demo-chart" viewBox="0 0 970 390" role="img" aria-label="Interactief fictief koersverloop. Gebruik de knoppen onder de grafiek om candles af te spelen.">
-                            <defs><linearGradient id="demo-line-fill" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#ed854f" stop-opacity=".2"/><stop offset="1" stop-color="#ed854f" stop-opacity="0"/></linearGradient></defs>
+                            <defs><linearGradient id="demo-line-fill" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#60a5fa" stop-opacity=".2"/><stop offset="1" stop-color="#60a5fa" stop-opacity="0"/></linearGradient></defs>
                             @foreach([170, 175, 180, 185, 190] as $level)
                                 <line x1="25" x2="906" y1="{{ $y($level) }}" y2="{{ $y($level) }}" class="demo-grid-line" />
                                 <text x="925" y="{{ $y($level) + 4 }}" class="demo-axis-text">{{ $level }}</text>
@@ -42,19 +44,19 @@
                             @endforeach
                             <g x-show="chartType === 'candles'">
                                 @foreach($candles as $i => $candle)
-                                    <g x-show="cursor >= {{ $i }}" @if($i > 17) style="display:none" @endif class="{{ $candle['close'] >= $candle['open'] ? 'demo-candle-up' : 'demo-candle-down' }}">
+                                    <g x-show="cursor >= {{ $i }}" @if($i > 17) style="display:none" @endif class="{{ $candle['close'] > $candle['open'] ? 'demo-candle-up' : ($candle['close'] < $candle['open'] ? 'demo-candle-down' : 'demo-candle-flat') }}">
                                         <line x1="{{ 45 + $i * 24 }}" x2="{{ 45 + $i * 24 }}" y1="{{ $y($candle['high']) }}" y2="{{ $y($candle['low']) }}" />
                                         <rect x="{{ 39 + $i * 24 }}" y="{{ min($y($candle['open']), $y($candle['close'])) }}" width="12" height="{{ max(2, abs($y($candle['open']) - $y($candle['close']))) }}" />
                                     </g>
                                 @endforeach
                             </g>
-                            <g x-show="chartType === 'line'" style="display:none"><path :d="areaPath" fill="url(#demo-line-fill)"/><path :d="linePath" fill="none" stroke="#ef8c59" stroke-width="2.5"/></g>
+                            <g x-show="chartType === 'line'" style="display:none"><path :d="areaPath" fill="url(#demo-line-fill)"/><path :d="linePath" fill="none" class="demo-line" stroke-width="2.5"/></g>
                             <line x1="25" x2="906" y1="{{ $y(178) }}" y2="{{ $y(178) }}" class="demo-entry-line" />
                             <rect x="34" y="{{ $y(178) + 8 }}" width="164" height="26" fill="#222222"/><text x="45" y="{{ $y(178) + 25 }}" class="demo-entry-label">INSTAPIDEE · € 178,00</text>
-                            <g transform="translate(453,174)" :transform="'translate(' + (45 + cursor * 24) + ',' + (320 - (current.close - 168) * 10) + ')'">
-                                <circle r="5" fill="#ed854f"/><circle r="11" fill="none" stroke="#ed854f" opacity=".4"/>
+                            <g class="demo-price-marker" transform="translate(453,174)" :transform="'translate(' + (45 + cursor * 24) + ',' + (320 - (current.close - 168) * 10) + ')'">
+                                <circle r="5" fill="currentColor"/><circle r="11" fill="none" stroke="currentColor" opacity=".4"/>
                             </g>
-                            <text x="825" y="373" class="demo-axis-text">CANDLE →</text>
+                            <text x="906" y="386" text-anchor="end" class="demo-axis-text">CANDLE →</text>
                         </svg>
                     </div>
                     <div class="demo-playback"><div class="playback-buttons"><button class="demo-play" @click="togglePlay()" :aria-label="playing ? 'Afspelen pauzeren' : 'Oefengrafiek afspelen'" x-text="playing ? 'Ⅱ Pauze' : cursor === candles.length - 1 ? '↺ Opnieuw' : '▷ Speel af'">▷ Speel af</button><button class="demo-next" @click="next()" :disabled="cursor === candles.length - 1">Volgende candle <span aria-hidden="true">→</span></button></div><span class="mono-label"><span x-text="cursor + 1">18</span> / {{ count($candles) }} CANDLES</span></div>
@@ -63,7 +65,7 @@
             </div>
             <div class="terminal-status"><span><span class="status-dot"></span> OEFENSTAND</span><span>ECHTE BESLISSINGEN. VIRTUEEL GELD.</span><span>JOUW TEMPO / JOUW PLAN</span></div>
         </div>
-        <p class="demo-footnote">Dit is een interactieve illustratie. Er wordt geen order geplaatst en het voorbeeld is geen beleggingsadvies.</p>
+        <p class="demo-footnote">Dit is een interactieve illustratie met fictieve EUR-prijzen, geen AAPL-notering in de oorspronkelijke handelsvaluta. Er wordt geen order geplaatst en het voorbeeld is geen beleggingsadvies.</p>
     </section>
 
     <section class="practice-section" id="werkwijze" aria-labelledby="practice-title">
