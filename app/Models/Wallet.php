@@ -38,9 +38,10 @@ class Wallet extends Model
      */
     public function withdraw(float $amount): void
     {
-        if ($this->balance >= $amount) {
-            $this->decrement('balance', $amount);
+        if ($amount <= 0 || ! static::whereKey($this->id)->where('balance', '>=', $amount)->decrement('balance', $amount)) {
+            throw \Illuminate\Validation\ValidationException::withMessages(['amount' => 'Onvoldoende saldo.']);
         }
+        $this->refresh();
     }
 
     /**

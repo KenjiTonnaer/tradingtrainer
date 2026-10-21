@@ -125,6 +125,7 @@ const registerTradingComponents = () => {
 		isError: false,
 		loading: false,
 		inputMode: 'quantity',
+		orderKey: crypto.randomUUID(),
 		amountInput: '',
 
 		get total() {
@@ -269,6 +270,7 @@ const registerTradingComponents = () => {
 						'X-Requested-With': 'XMLHttpRequest',
 					},
 					body: JSON.stringify({
+						order_key: this.orderKey,
 						symbol: this.symbol,
 						quantity: this.quantity,
 						price: this.price,
@@ -279,6 +281,7 @@ const registerTradingComponents = () => {
 				this.message = data.message ?? (response.ok ? 'Order uitgevoerd.' : 'Er ging iets mis.');
 				this.isError = !response.ok || !data.success;
 				if (!this.isError) {
+					this.orderKey = crypto.randomUUID();
 					this.quantity = 1;
 					this.price = this.livePrice;
 					if (data.wallet_balance !== undefined) this.walletBalance = parseFloat(data.wallet_balance);
