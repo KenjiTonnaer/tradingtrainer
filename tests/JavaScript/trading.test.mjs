@@ -118,11 +118,16 @@ test('missing and delayed prices never produce a usable portfolio valuation', ()
     const positions = [{id: 1, symbol: 'AAPL', quantity: 2, total_invested: 150, asset_type: 'stock'}];
     const account = component('accountOverview', positions, 1000, []);
     assert.equal(account.complete, false);
+    account.refreshing = true;
+    assert.equal(account.valuationLabel, 'Koersgegevens ophalen…');
+    account.refreshing = false;
     assert.equal(account.value(positions[0]), null);
     account.quotes.AAPL = {price: 100, status: 'delayed', tradable: false};
     assert.equal(account.complete, false);
+    assert.match(account.valuationLabel, /Onvolledige waardering/);
     account.quotes.AAPL = quote;
     assert.equal(account.complete, true);
+    assert.equal(account.valuationLabel, 'Saldo + actuele positiewaarde');
     assert.equal(account.equity, 1200);
     assert.equal(account.unrealized, 50);
 });

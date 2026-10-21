@@ -23,10 +23,10 @@ async function api(url, method = 'GET', data) {
 
 const charts = new Map();
 const chartOptions = element => ({
-    width: element.clientWidth, height: element.classList.contains('equity-chart') ? 240 : 400,
+    width: element.clientWidth, height: element.clientHeight || (element.classList.contains('equity-chart') ? 240 : 400),
     layout: {background: {type: ColorType.Solid, color: 'transparent'}, textColor: document.documentElement.classList.contains('dark') ? '#b9b5af' : '#65615c', fontFamily: 'IBM Plex Sans, sans-serif', fontSize: 13, attributionLogo: true},
     grid: {vertLines: {color: document.documentElement.classList.contains('dark') ? '#363636' : '#e9e5db'}, horzLines: {color: document.documentElement.classList.contains('dark') ? '#363636' : '#e9e5db'}},
-    rightPriceScale: {borderVisible: false}, timeScale: {borderVisible: false, timeVisible: !['30D', '6M', '1Y'].includes(element.dataset.range), secondsVisible: false},
+    rightPriceScale: {borderVisible: false}, timeScale: {borderVisible: false, timeVisible: !element.classList.contains('equity-chart') && !['30D', '6M', '1Y'].includes(element.dataset.range), secondsVisible: false},
     localization: {locale: 'nl-NL', priceFormatter: element.classList.contains('equity-chart') ? money : price},
 });
 function destroyChart(element) {
@@ -60,7 +60,7 @@ function drawChart(element, candles, type = 'candles') {
         volume.setData(candles.map(c => ({time: c.time, value: c.volume || 0, color: `${colors[candleDirection(c)]}66`})));
     }
     chart.timeScale().fitContent();
-    const observer = new ResizeObserver(() => chart.applyOptions({width: element.clientWidth}));
+    const observer = new ResizeObserver(() => chart.applyOptions({width: element.clientWidth, height: element.clientHeight}));
     observer.observe(element);
     const state = {chart, series, observer, signature};
     if (element.dataset.symbol && candles.length) {
@@ -209,6 +209,7 @@ function registerComponents() {
         positions, cash, history, quotes: {}, search: '', asset: 'all', sort: 'symbol', timer: null, refreshing: false,
         snapshotMessage: 'De grafiek bouwt vanaf nu op met accountwaarderingen. Historische punten worden niet verzonnen.', money, number, statusLabel, resultClass, signedMoney,
         get complete() { return this.positions.every(p => this.quotes[p.symbol]?.tradable && this.quotes[p.symbol]?.price > 0); },
+        get valuationLabel() { return this.complete ? 'Saldo + actuele positiewaarde' : this.refreshing ? 'Koersgegevens ophalen…' : 'Onvolledige waardering · controleer de koersstatus'; },
         value(p) { const q = this.quotes[p.symbol]; return q?.tradable && q.price > 0 ? Number(p.quantity) * q.price : null; },
         get equity() { return Number(this.cash) + this.positions.reduce((sum, p) => sum + (this.value(p) || 0), 0); },
         get unrealized() { return this.equity - this.cash - this.positions.reduce((sum, p) => sum + Number(p.total_invested), 0); },

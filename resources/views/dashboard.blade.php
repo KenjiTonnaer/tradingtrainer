@@ -2,7 +2,7 @@
     <div class="overview-page" x-data="accountOverview(@js($positions), @js($cash), @js($history))">
         <header class="page-heading"><div><p class="eyebrow">Je oefenrekening · EUR · {{ auth()->user()->name }}</p><h1>Jouw handelsdesk.</h1><p>Elke trade een les. Volg je rekening, posities en beslissingen.</p></div><a class="button primary" href="{{ route('markets.show', 'AAPL') }}">Nieuwe trade <span>↗</span></a></header>
         <div class="metric-grid">
-            <article class="panel metric"><p>Totaalvermogen</p><strong x-text="complete ? money(equity) : '—'">—</strong><span x-text="complete ? 'Saldo + actuele positiewaarde' : 'Wachten op complete koersgegevens'"></span></article>
+            <article class="panel metric"><p>Totaalvermogen</p><strong x-text="complete ? money(equity) : '—'">—</strong><span x-text="valuationLabel"></span></article>
             <article class="panel metric"><p>Beschikbaar saldo</p><strong>{{ '€ '.number_format($cash, 2, ',', '.') }}</strong><span>Virtueel geld · rekeningvaluta EUR</span></article>
             <article class="panel metric"><p>Gerealiseerd resultaat</p><strong class="{{ $realized > 0 ? 'positive' : ($realized < 0 ? 'negative' : 'neutral') }}">{{ ($realized > 0 ? '+' : '').'€ '.number_format($realized, 2, ',', '.') }}</strong><span>{{ $winRate === null ? 'Nog geen afgeronde verkopen' : $winRate.'% winstgevende verkopen' }}</span></article>
             <article class="panel metric"><p>Ongerealiseerd resultaat</p><strong :class="complete ? resultClass(unrealized) : 'neutral'" x-text="complete ? signedMoney(unrealized) : '—'">—</strong><span>Open posities · inclusief valuta-effect</span></article>
