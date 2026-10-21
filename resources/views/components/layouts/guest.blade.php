@@ -6,13 +6,13 @@
     <header class="landing-header">
         <nav class="landing-nav" aria-label="Hoofdnavigatie">
             <x-brand />
-            <a href="#werkwijze" class="nav-method">De werkwijze <span aria-hidden="true">↘</span></a>
+            <a href="#werkwijze" class="nav-method">De werkwijze <span aria-hidden="true">↓</span></a>
             <div class="landing-links">
                 @auth
-                    <a href="{{ route('dashboard') }}" class="button primary">Naar je handelsdesk <span aria-hidden="true">↗</span></a>
+                    <a href="{{ route('dashboard') }}" class="button primary">Naar je handelsdesk <span aria-hidden="true">→</span></a>
                 @else
                     <a href="{{ route('login') }}" class="login-link">Inloggen</a>
-                    <a href="{{ route('register') }}" class="button primary">Open oefenrekening <span aria-hidden="true">↗</span></a>
+                    <a href="{{ route('register') }}" class="button primary">Open oefenrekening <span aria-hidden="true">→</span></a>
                 @endauth
             </div>
         </nav>

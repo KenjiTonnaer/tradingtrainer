@@ -11,7 +11,7 @@
     @endphp
 
     <section class="market-ribbon" aria-label="Wat je kunt oefenen">
-        <span><b>AAPL</b> AANDELEN</span><span><b>BTC</b> CRYPTO</span><span><b>EUR</b> REKENINGVALUTA</span><span><b>€ 10.000</b> VIRTUEEL STARTSALDO</span><span class="ribbon-label">JOUW LEERCURVE BEGINT HIER ↙</span>
+        <span><b>AAPL</b> AANDELEN</span><span><b>BTC</b> CRYPTO</span><span><b>EUR</b> REKENINGVALUTA</span><span><b>€ 10.000</b> VIRTUEEL STARTSALDO</span><span class="ribbon-label">JOUW LEERCURVE BEGINT HIER</span>
     </section>
 
     <section class="landing-hero">
@@ -19,7 +19,7 @@
         <h1>De markt wacht niet.<br><span>Jij kunt wél oefenen.</span></h1>
         <div class="hero-intro">
             <p>Niet elke trade wordt winst. Elke trade kan een les worden.<br>Ontwikkel je aanpak met virtueel geld, een handelsplan en de ruimte om opnieuw te beginnen.</p>
-            <a href="{{ auth()->check() ? route('markets.show', 'AAPL') : route('register') }}" class="button primary hero-cta">Neem plaats aan je handelsdesk <span aria-hidden="true">↗</span></a>
+            <a href="{{ auth()->check() ? route('markets.show', 'AAPL') : route('register') }}" class="button primary hero-cta">Neem plaats aan je handelsdesk <span aria-hidden="true">→</span></a>
         </div>
     </section>
 
@@ -59,7 +59,7 @@
                     </div>
                     <div class="demo-playback"><div class="playback-buttons"><button class="demo-play" @click="togglePlay()" :aria-label="playing ? 'Afspelen pauzeren' : 'Oefengrafiek afspelen'" x-text="playing ? 'Ⅱ Pauze' : cursor === candles.length - 1 ? '↺ Opnieuw' : '▷ Speel af'">▷ Speel af</button><button class="demo-next" @click="next()" :disabled="cursor === candles.length - 1">Volgende candle <span aria-hidden="true">→</span></button></div><span class="mono-label"><span x-text="cursor + 1">18</span> / {{ count($candles) }} CANDLES</span></div>
                 </div>
-                <aside class="demo-plan"><span class="mono-label">EERST EEN PLAN.</span><h3>Dan pas<br>de knop.</h3><dl><div><dt>Instapidee</dt><dd>€ 178,00</dd></div><div><dt>Stop-loss</dt><dd>€ 174,00</dd></div><div><dt>Gepland risico</dt><dd>€ 40,00<small>10 stuks × € 4,00</small></dd></div></dl><p>Een koerslijn vertelt wat er gebeurde. Je dagboek vertelt waarom je meedeed.</p><a href="{{ auth()->check() ? route('replay.index') : route('register') }}">Probeer een hele sessie <span aria-hidden="true">↗</span></a></aside>
+                <aside class="demo-plan"><span class="mono-label">EERST EEN PLAN.</span><h3>Dan pas<br>de knop.</h3><dl><div><dt>Instapidee</dt><dd>€ 178,00</dd></div><div><dt>Stop-loss</dt><dd>€ 174,00</dd></div><div><dt>Gepland risico</dt><dd>€ 40,00<small>10 stuks × € 4,00</small></dd></div></dl><p>Een koerslijn vertelt wat er gebeurde. Je dagboek vertelt waarom je meedeed.</p><a href="{{ auth()->check() ? route('replay.index') : route('register') }}">Probeer een hele sessie <span aria-hidden="true">→</span></a></aside>
             </div>
             <div class="terminal-status"><span><span class="status-dot"></span> OEFENSTAND</span><span>ECHTE BESLISSINGEN. VIRTUEEL GELD.</span><span>JOUW TEMPO / JOUW PLAN</span></div>
         </div>
@@ -70,9 +70,9 @@
         <div class="practice-inner">
             <div class="practice-heading"><p class="eyebrow">EEN SYSTEEM VOOR JE LEERCURVE</p><h2 id="practice-title">Minder gissen.<br><span>Meer begrijpen.</span></h2><p>Een koopknop is het begin.<br>Wat je ervoor en erna doet, maakt het verschil.</p></div>
             <div class="practice-steps">
-                <article><span class="step-index">01 / VOORBEREIDEN</span><div><h3>Geef je idee een grens.</h3><p>Kies een instrument. Schrijf je reden op. Bepaal vooraf hoeveel je wilt riskeren met je positiegrootte en stop-loss.</p><a href="{{ route('markets.show', 'AAPL') }}">Naar de handelsdesk ↗</a></div></article>
-                <article><span class="step-index">02 / UITPROBEREN</span><div><h3>Maak de beslissing zelf.</h3><p>Handel met virtueel geld of speel een historische dag stap voor stap af. De volgende candle zie je pas wanneer je verder speelt.</p><a href="{{ route('replay.index') }}">Ontdek de oefenstudio ↗</a></div></article>
-                <article><span class="step-index">03 / TERUGKIJKEN</span><div><h3>Zoek de les in je trade.</h3><p>Beoordeel je aanpak, gevoel en discipline. Je resultaat per strategie helpt je patronen in je eigen beslissingen te herkennen.</p><a href="{{ route('journal.index') }}">Bekijk het handelsdagboek ↗</a></div></article>
+                <article><span class="step-index">01 / VOORBEREIDEN</span><div><h3>Geef je idee een grens.</h3><p>Kies een instrument. Schrijf je reden op. Bepaal vooraf hoeveel je wilt riskeren met je positiegrootte en stop-loss.</p><a href="{{ route('markets.show', 'AAPL') }}">Naar de handelsdesk →</a></div></article>
+                <article><span class="step-index">02 / UITPROBEREN</span><div><h3>Maak de beslissing zelf.</h3><p>Handel met virtueel geld of speel een historische dag stap voor stap af. De volgende candle zie je pas wanneer je verder speelt.</p><a href="{{ route('replay.index') }}">Ontdek de oefenstudio →</a></div></article>
+                <article><span class="step-index">03 / TERUGKIJKEN</span><div><h3>Zoek de les in je trade.</h3><p>Beoordeel je aanpak, gevoel en discipline. Je resultaat per strategie helpt je patronen in je eigen beslissingen te herkennen.</p><a href="{{ route('journal.index') }}">Bekijk het handelsdagboek →</a></div></article>
             </div>
         </div>
     </section>
@@ -80,7 +80,7 @@
     <section class="landing-closing">
         <span class="closing-index">VOLGENDE SESSIE / JIJ</span>
         <h2>Je hoeft het nog<br>niet te kunnen.</h2>
-        <div><p>Daar is oefenen voor.<br>Begin met € 10.000 virtueel startkapitaal.</p><a href="{{ auth()->check() ? route('dashboard') : route('register') }}" class="button primary">Begin aan je leercurve <span aria-hidden="true">↗</span></a></div>
+        <div><p>Daar is oefenen voor.<br>Begin met € 10.000 virtueel startkapitaal.</p><a href="{{ auth()->check() ? route('dashboard') : route('register') }}" class="button primary">Begin aan je leercurve <span aria-hidden="true">→</span></a></div>
         <details class="data-disclosure"><summary>Over het koersmateriaal en virtuele geld <span aria-hidden="true">+</span></summary><p>Je oefent met beschikbare marktdata of duidelijk gelabelde simulatiekoersen. Bij ieder instrument staan de bron en actualiteit. Bij ontbrekende recente koersen worden orders gepauzeerd. Het platform verstuurt geen echte effectenorders.</p></details>
     </section>
 </x-layouts.guest>
