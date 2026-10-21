@@ -23,7 +23,7 @@ async function api(url, method = 'GET', data) {
 const charts = new Map();
 const chartOptions = element => ({
     width: element.clientWidth, height: element.classList.contains('equity-chart') ? 240 : 400,
-    layout: {background: {type: ColorType.Solid, color: 'transparent'}, textColor: document.documentElement.classList.contains('dark') ? '#a4a4a4' : '#6b6b6b', fontFamily: 'IBM Plex Mono, monospace', attributionLogo: true},
+    layout: {background: {type: ColorType.Solid, color: 'transparent'}, textColor: document.documentElement.classList.contains('dark') ? '#b9b5af' : '#65615c', fontFamily: 'IBM Plex Sans, sans-serif', fontSize: 13, attributionLogo: true},
     grid: {vertLines: {color: document.documentElement.classList.contains('dark') ? '#363636' : '#e9e5db'}, horzLines: {color: document.documentElement.classList.contains('dark') ? '#363636' : '#e9e5db'}},
     rightPriceScale: {borderVisible: false}, timeScale: {borderVisible: false, timeVisible: true, secondsVisible: false},
     localization: {locale: 'nl-NL', priceFormatter: value => money(value)},

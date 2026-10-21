@@ -16,7 +16,7 @@
 
     <section class="landing-hero">
         <div class="hero-kicker"><span class="orange-square" aria-hidden="true"></span> THE PRACTICE DESK <span>VOOR JE EERSTE ÉN JE VOLGENDE TRADE</span></div>
-        <h1>DE MARKT WACHT NIET.<br><span>JIJ KUNT WÉL OEFENEN.</span></h1>
+        <h1>De markt wacht niet.<br><span>Jij kunt wél oefenen.</span></h1>
         <div class="hero-intro">
             <p>Niet elke trade wordt winst. Elke trade kan een les worden.<br>Ontwikkel je aanpak met virtueel geld, een handelsplan en de ruimte om opnieuw te beginnen.</p>
             <a href="{{ auth()->check() ? route('markets.show', 'AAPL') : route('register') }}" class="button primary hero-cta">Neem plaats aan je handelsdesk <span aria-hidden="true">↗</span></a>
@@ -68,7 +68,7 @@
 
     <section class="practice-section" id="werkwijze" aria-labelledby="practice-title">
         <div class="practice-inner">
-            <div class="practice-heading"><p class="eyebrow">EEN SYSTEEM VOOR JE LEERCURVE</p><h2 id="practice-title">MINDER GISSEN.<br><span>MEER BEGRIJPEN.</span></h2><p>Een koopknop is het begin.<br>Wat je ervoor en erna doet, maakt het verschil.</p></div>
+            <div class="practice-heading"><p class="eyebrow">EEN SYSTEEM VOOR JE LEERCURVE</p><h2 id="practice-title">Minder gissen.<br><span>Meer begrijpen.</span></h2><p>Een koopknop is het begin.<br>Wat je ervoor en erna doet, maakt het verschil.</p></div>
             <div class="practice-steps">
                 <article><span class="step-index">01 / VOORBEREIDEN</span><div><h3>Geef je idee een grens.</h3><p>Kies een instrument. Schrijf je reden op. Bepaal vooraf hoeveel je wilt riskeren met je positiegrootte en stop-loss.</p><a href="{{ route('markets.show', 'AAPL') }}">Naar de handelsdesk ↗</a></div></article>
                 <article><span class="step-index">02 / UITPROBEREN</span><div><h3>Maak de beslissing zelf.</h3><p>Handel met virtueel geld of speel een historische dag stap voor stap af. De volgende candle zie je pas wanneer je verder speelt.</p><a href="{{ route('replay.index') }}">Ontdek de oefenstudio ↗</a></div></article>
@@ -79,7 +79,7 @@
 
     <section class="landing-closing">
         <span class="closing-index">VOLGENDE SESSIE / JIJ</span>
-        <h2>JE HOEFT HET NOG<br>NIET TE KUNNEN.</h2>
+        <h2>Je hoeft het nog<br>niet te kunnen.</h2>
         <div><p>Daar is oefenen voor.<br>Begin met € 10.000 virtueel startkapitaal.</p><a href="{{ auth()->check() ? route('dashboard') : route('register') }}" class="button primary">Begin aan je leercurve <span aria-hidden="true">↗</span></a></div>
         <details class="data-disclosure"><summary>Over het koersmateriaal en virtuele geld <span aria-hidden="true">+</span></summary><p>Je oefent met beschikbare marktdata of duidelijk gelabelde simulatiekoersen. Bij ieder instrument staan de bron en actualiteit. Bij ontbrekende recente koersen worden orders gepauzeerd. Het platform verstuurt geen echte effectenorders.</p></details>
     </section>
