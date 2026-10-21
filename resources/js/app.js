@@ -23,8 +23,8 @@ async function api(url, method = 'GET', data) {
 const charts = new Map();
 const chartOptions = element => ({
     width: element.clientWidth, height: element.classList.contains('equity-chart') ? 240 : 400,
-    layout: {background: {type: ColorType.Solid, color: 'transparent'}, textColor: document.documentElement.classList.contains('dark') ? '#a3a69a' : '#6a6c63', fontFamily: 'IBM Plex Mono, monospace', attributionLogo: true},
-    grid: {vertLines: {color: document.documentElement.classList.contains('dark') ? '#34382f' : '#e9e5db'}, horzLines: {color: document.documentElement.classList.contains('dark') ? '#34382f' : '#e9e5db'}},
+    layout: {background: {type: ColorType.Solid, color: 'transparent'}, textColor: document.documentElement.classList.contains('dark') ? '#a4a4a4' : '#6b6b6b', fontFamily: 'IBM Plex Mono, monospace', attributionLogo: true},
+    grid: {vertLines: {color: document.documentElement.classList.contains('dark') ? '#363636' : '#e9e5db'}, horzLines: {color: document.documentElement.classList.contains('dark') ? '#363636' : '#e9e5db'}},
     rightPriceScale: {borderVisible: false}, timeScale: {borderVisible: false, timeVisible: true, secondsVisible: false},
     localization: {locale: 'nl-NL', priceFormatter: value => money(value)},
 });
@@ -40,13 +40,14 @@ function drawChart(element, candles, type = 'candles') {
     if (charts.get(element)?.signature === signature) return;
     destroyChart(element);
     const chart = createChart(element, chartOptions(element));
-    const series = type === 'candles' ? chart.addSeries(CandlestickSeries, {upColor: '#5c9575', downColor: '#c76b70', wickUpColor: '#5c9575', wickDownColor: '#c76b70', borderVisible: false}) : chart.addSeries(LineSeries, {color: '#ce793f', lineWidth: 2, priceLineVisible: false});
+    const bullishColor = document.documentElement.classList.contains('dark') ? '#e3ddd3' : '#8f5737';
+    const series = type === 'candles' ? chart.addSeries(CandlestickSeries, {upColor: bullishColor, downColor: '#c76b70', wickUpColor: bullishColor, wickDownColor: '#c76b70', borderVisible: false}) : chart.addSeries(LineSeries, {color: '#ce793f', lineWidth: 2, priceLineVisible: false});
     if (candles.length) series.setData(type === 'candles' ? candles : candles.map(c => ({time: c.time, value: c.close})));
     if (candles.some(c => c.volume > 0)) {
         const volume = chart.addSeries(HistogramSeries, {priceScaleId: 'volume', priceFormat: {type: 'volume'}, priceLineVisible: false, lastValueVisible: false});
         volume.priceScale().applyOptions({scaleMargins: {top: .85, bottom: 0}, visible: false});
         chart.priceScale('right').applyOptions({scaleMargins: {top: .1, bottom: .2}});
-        volume.setData(candles.map(c => ({time: c.time, value: c.volume || 0, color: c.close >= c.open ? '#5c957555' : '#c76b7055'})));
+        volume.setData(candles.map(c => ({time: c.time, value: c.volume || 0, color: c.close >= c.open ? `${bullishColor}55` : '#c76b7055'})));
     }
     chart.timeScale().fitContent();
     const observer = new ResizeObserver(() => chart.applyOptions({width: element.clientWidth}));

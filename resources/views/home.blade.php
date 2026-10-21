@@ -50,7 +50,7 @@
                             </g>
                             <g x-show="chartType === 'line'" style="display:none"><path :d="areaPath" fill="url(#demo-line-fill)"/><path :d="linePath" fill="none" stroke="#ef8c59" stroke-width="2.5"/></g>
                             <line x1="25" x2="906" y1="{{ $y(178) }}" y2="{{ $y(178) }}" class="demo-entry-line" />
-                            <rect x="34" y="{{ $y(178) + 8 }}" width="164" height="26" fill="#22221f"/><text x="45" y="{{ $y(178) + 25 }}" class="demo-entry-label">INSTAPIDEE · € 178,00</text>
+                            <rect x="34" y="{{ $y(178) + 8 }}" width="164" height="26" fill="#222222"/><text x="45" y="{{ $y(178) + 25 }}" class="demo-entry-label">INSTAPIDEE · € 178,00</text>
                             <g transform="translate(453,174)" :transform="'translate(' + (45 + cursor * 24) + ',' + (320 - (current.close - 168) * 10) + ')'">
                                 <circle r="5" fill="#ed854f"/><circle r="11" fill="none" stroke="#ed854f" opacity=".4"/>
                             </g>
