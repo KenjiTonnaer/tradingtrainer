@@ -82,6 +82,8 @@
 .app-body .eyebrow { margin-bottom: 7px; color: var(--tt-muted); font-family: var(--font-sans); font-size: 12px; font-weight: 500; line-height: 1.6; text-transform: none; letter-spacing: .15px; }
 .app-body .hint, .auth-body .hint { color: var(--tt-muted); font-size: 13px; line-height: 1.8; }
 .app-body .text-link { font-size: 14px; line-height: 1.5; }
+.overview-page { --tt-link: #bd4a0a; }
+.dark .overview-page { --tt-link: #ffb984; }
 .app-body .button, .auth-body .button { gap: 12px; min-height: 44px; padding: 11px 16px; border-radius: 7px; font-family: var(--font-sans); font-size: 14px; line-height: 1.5; }
 .app-body .button.compact { min-height: 38px; padding: 8px 12px; font-size: 13px; }
 .app-body label, .auth-body label { gap: 8px; color: var(--tt-text); font-size: 14px; font-weight: 500; line-height: 1.5; }
