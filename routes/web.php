@@ -16,6 +16,12 @@ Route::view('dashboard', 'dashboard')
     ->name('dashboard');
 
 Route::middleware(['auth'])->group(function () {
+    Route::get('/journal', [\App\Http\Controllers\JournalController::class, 'index'])->name('journal.index');
+    Route::patch('/journal/{trade}', [\App\Http\Controllers\JournalController::class, 'update'])->name('journal.update');
+    Route::patch('/portfolio/{position}/protection', [TradeController::class, 'protection'])->name('positions.protection');
+    Route::post('/account/snapshot', function (\Illuminate\Http\Request $request, \App\Services\PortfolioValue $value) {
+        return response()->json($value->snapshot($request->user()));
+    })->middleware('throttle:10,1');
     Route::redirect('settings', 'settings/profile');
 
     Volt::route('settings/profile', 'settings.profile')->name('profile.edit');

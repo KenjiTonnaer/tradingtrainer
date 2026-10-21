@@ -10,11 +10,12 @@ class PaperPosition extends Model
     protected $fillable = [
         'user_id', 'symbol', 'asset_type',
         'quantity', 'avg_buy_price', 'total_invested',
+        'stop_loss', 'take_profit', 'strategy',
     ];
 
     protected $casts = [
-        'quantity'       => 'decimal:6',
-        'avg_buy_price'  => 'decimal:4',
+        'quantity' => 'decimal:6',
+        'avg_buy_price' => 'decimal:4',
         'total_invested' => 'decimal:2',
     ];
 
@@ -26,19 +27,22 @@ class PaperPosition extends Model
     /** Huidige waarde op basis van live prijs */
     public function getCurrentValue(float $currentPrice): float
     {
-        return round((float)$this->quantity * $currentPrice, 2);
+        return round((float) $this->quantity * $currentPrice, 2);
     }
 
     /** Winst/verlies in euros */
     public function getUnrealizedPnl(float $currentPrice): float
     {
-        return round($this->getCurrentValue($currentPrice) - (float)$this->total_invested, 2);
+        return round($this->getCurrentValue($currentPrice) - (float) $this->total_invested, 2);
     }
 
     /** Winst/verlies in % */
     public function getUnrealizedPnlPercent(float $currentPrice): float
     {
-        if ($this->total_invested == 0) return 0;
-        return round(($this->getUnrealizedPnl($currentPrice) / (float)$this->total_invested) * 100, 2);
+        if ($this->total_invested == 0) {
+            return 0;
+        }
+
+        return round(($this->getUnrealizedPnl($currentPrice) / (float) $this->total_invested) * 100, 2);
     }
 }

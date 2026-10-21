@@ -13,6 +13,7 @@ class PaperTrade extends Model
         'quantity' => 'decimal:6', 'price_per_unit' => 'decimal:4',
         'total_value' => 'decimal:2', 'wallet_balance_after' => 'decimal:2',
         'quote' => 'array', 'realized_pnl' => 'decimal:2',
+        'planned_risk' => 'decimal:2',
     ];
 
     public function user(): BelongsTo
@@ -22,8 +23,13 @@ class PaperTrade extends Model
 
     public function getPnlAttribute(): ?float
     {
-        if ($this->type !== 'sell') return null;
-        if ($this->realized_pnl !== null) return (float) $this->realized_pnl;
+        if ($this->type !== 'sell') {
+            return null;
+        }
+        if ($this->realized_pnl !== null) {
+            return (float) $this->realized_pnl;
+        }
+
         return app(\App\Services\TradeLedger::class)->forUser($this->user_id)['profits'][$this->id] ?? 0.0;
     }
 }
