@@ -23,8 +23,8 @@ async function api(url, method = 'GET', data) {
 const charts = new Map();
 const chartOptions = element => ({
     width: element.clientWidth, height: element.classList.contains('equity-chart') ? 240 : 400,
-    layout: {background: {type: ColorType.Solid, color: 'transparent'}, textColor: '#64748b', fontFamily: 'Inter, system-ui, sans-serif', attributionLogo: true},
-    grid: {vertLines: {color: document.documentElement.classList.contains('dark') ? '#243248' : '#f1f5f9'}, horzLines: {color: document.documentElement.classList.contains('dark') ? '#243248' : '#f1f5f9'}},
+    layout: {background: {type: ColorType.Solid, color: 'transparent'}, textColor: document.documentElement.classList.contains('dark') ? '#a3a69a' : '#6a6c63', fontFamily: 'IBM Plex Mono, monospace', attributionLogo: true},
+    grid: {vertLines: {color: document.documentElement.classList.contains('dark') ? '#34382f' : '#e9e5db'}, horzLines: {color: document.documentElement.classList.contains('dark') ? '#34382f' : '#e9e5db'}},
     rightPriceScale: {borderVisible: false}, timeScale: {borderVisible: false, timeVisible: true, secondsVisible: false},
     localization: {locale: 'nl-NL', priceFormatter: value => money(value)},
 });
@@ -40,13 +40,13 @@ function drawChart(element, candles, type = 'candles') {
     if (charts.get(element)?.signature === signature) return;
     destroyChart(element);
     const chart = createChart(element, chartOptions(element));
-    const series = type === 'candles' ? chart.addSeries(CandlestickSeries, {upColor: '#0d9488', downColor: '#e11d48', wickUpColor: '#0d9488', wickDownColor: '#e11d48', borderVisible: false}) : chart.addSeries(LineSeries, {color: '#0f766e', lineWidth: 2, priceLineVisible: false});
+    const series = type === 'candles' ? chart.addSeries(CandlestickSeries, {upColor: '#5c9575', downColor: '#c76b70', wickUpColor: '#5c9575', wickDownColor: '#c76b70', borderVisible: false}) : chart.addSeries(LineSeries, {color: '#ce793f', lineWidth: 2, priceLineVisible: false});
     if (candles.length) series.setData(type === 'candles' ? candles : candles.map(c => ({time: c.time, value: c.close})));
     if (candles.some(c => c.volume > 0)) {
         const volume = chart.addSeries(HistogramSeries, {priceScaleId: 'volume', priceFormat: {type: 'volume'}, priceLineVisible: false, lastValueVisible: false});
         volume.priceScale().applyOptions({scaleMargins: {top: .85, bottom: 0}, visible: false});
         chart.priceScale('right').applyOptions({scaleMargins: {top: .1, bottom: .2}});
-        volume.setData(candles.map(c => ({time: c.time, value: c.volume || 0, color: c.close >= c.open ? '#0d948855' : '#e11d4855'})));
+        volume.setData(candles.map(c => ({time: c.time, value: c.volume || 0, color: c.close >= c.open ? '#5c957555' : '#c76b7055'})));
     }
     chart.timeScale().fitContent();
     const observer = new ResizeObserver(() => chart.applyOptions({width: element.clientWidth}));
@@ -85,6 +85,27 @@ function registerComponents() {
     const Alpine = window.Alpine;
     if (!Alpine || window.ttComponentsRegistered) return;
     window.ttComponentsRegistered = true;
+    Alpine.data('landingDemo', (candles) => ({
+        candles, cursor: Math.min(17, candles.length - 1), chartType: 'candles', playing: false, timer: null,
+        money,
+        get current() { return this.candles[this.cursor]; },
+        get linePath() {
+            return this.candles.slice(0, this.cursor + 1).map((candle, index) => `${index === 0 ? 'M' : 'L'}${45 + index * 24},${320 - (candle.close - 168) * 10}`).join(' ');
+        },
+        get areaPath() { return `${this.linePath} L${45 + this.cursor * 24},340 L45,340 Z`; },
+        next() {
+            if (this.cursor < this.candles.length - 1) this.cursor++;
+            if (this.cursor === this.candles.length - 1) this.pause();
+        },
+        pause() { clearInterval(this.timer); this.timer = null; this.playing = false; },
+        togglePlay() {
+            if (this.playing) { this.pause(); return; }
+            if (this.cursor === this.candles.length - 1) this.cursor = Math.min(17, this.candles.length - 1);
+            this.playing = true;
+            this.timer = setInterval(() => this.next(), 650);
+        },
+        destroy() { this.pause(); },
+    }));
     Alpine.data('tradeDesk', (symbol, quote, balance) => ({
         symbol, quote, walletBalance: balance, side: 'buy', quantity: 1, availableQuantity: 0, position: null,
         strategy: '', reason: '', stopLoss: '', takeProfit: '', protectionStop: '', protectionTake: '', riskPercent: 1,

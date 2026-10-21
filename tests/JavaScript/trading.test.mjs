@@ -13,6 +13,41 @@ const root = {querySelector() {return null;}, querySelectorAll() {return [];}};
 const component = (name, ...args) => Object.assign(factories.get(name)(...args), {$root: root, $nextTick(fn) {fn();}});
 const quote = {price: 100, tradable: true, status: 'simulated', as_of: new Date().toISOString()};
 
+test('public demo advances only within its fictional data without submitting requests', () => {
+    const candles = Array.from({length: 20}, (_, index) => ({open: 170, close: 170 + index, high: 191, low: 169}));
+    const demo = component('landingDemo', candles);
+    const oldFetch = globalThis.fetch;
+    globalThis.fetch = () => {throw Error('A public illustration must not send orders');};
+    try {
+        assert.equal(demo.cursor, 17);
+        assert.equal(demo.current.close, 187);
+        assert.equal((demo.linePath.match(/[ML]/g) || []).length, 18);
+        demo.next(); demo.next(); demo.next();
+        assert.equal(demo.cursor, 19);
+        assert.equal(demo.current.close, 189);
+        assert.equal((demo.linePath.match(/[ML]/g) || []).length, 20);
+        assert.equal(demo.playing, false);
+    } finally { globalThis.fetch = oldFetch; }
+});
+
+test('public demo playback stops on completion and releases its timer', () => {
+    const candles = Array.from({length: 20}, (_, index) => ({close: 170 + index}));
+    const demo = component('landingDemo', candles);
+    const oldSetInterval = globalThis.setInterval;
+    const oldClearInterval = globalThis.clearInterval;
+    let tick, cleared = false;
+    globalThis.setInterval = callback => {tick = callback; return 42;};
+    globalThis.clearInterval = id => {if (id === 42) cleared = true;};
+    try {
+        demo.togglePlay(); assert.equal(demo.playing, true);
+        tick(); tick();
+        assert.equal(demo.playing, false);
+        assert.equal(cleared, true);
+        demo.togglePlay(); assert.equal(demo.cursor, 17);
+        demo.destroy(); assert.equal(demo.timer, null);
+    } finally { globalThis.setInterval = oldSetInterval; globalThis.clearInterval = oldClearInterval; }
+});
+
 test('risk sizing respects both available cash and the stop distance', () => {
     const desk = component('tradeDesk', 'AAPL', quote, 1000);
     desk.stopLoss = 95; desk.riskPercent = 1; desk.sizeByRisk();

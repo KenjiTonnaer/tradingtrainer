@@ -1,6 +1,6 @@
 <x-layouts.app title="Overzicht · TradingTrainer">
     <div x-data="accountOverview(@js($positions), @js($cash), @js($history))">
-        <header class="page-heading"><div><p class="eyebrow">JOUW VOORTGANG</p><h1>Elke trade een les.</h1><p>Welkom terug, {{ auth()->user()->name }}. Hier staat je oefenrekening.</p></div><a class="button primary" href="{{ route('markets.show', 'AAPL') }}">Nieuwe trade <span>↗</span></a></header>
+        <header class="page-heading"><div><p class="eyebrow">PAPER ACCOUNT / EUR / {{ auth()->user()->name }}</p><h1>Jouw handelsdesk.</h1><p>Elke trade een les. Volg je rekening, posities en beslissingen.</p></div><a class="button primary" href="{{ route('markets.show', 'AAPL') }}">Nieuwe trade <span>↗</span></a></header>
         <div class="metric-grid">
             <article class="panel metric"><p>Totaalvermogen</p><strong x-text="complete ? money(equity) : '—'">—</strong><span x-text="complete ? 'Saldo + actuele positiewaarde' : 'Wachten op complete koersgegevens'"></span></article>
             <article class="panel metric"><p>Beschikbaar saldo</p><strong>{{ '€ '.number_format($cash, 2, ',', '.') }}</strong><span>Virtueel geld · rekeningvaluta EUR</span></article>
